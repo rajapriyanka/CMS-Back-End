@@ -1,7 +1,6 @@
 package com.cms.configuration;
 
 import com.cms.filter.JwtAuthFilter;
-import com.cms.filter.RequestValidationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,21 +23,18 @@ public class WebSecurityConfiguration {
     @Autowired
     private JwtAuthFilter jwtAuthFilter;
 
-    @Autowired
-    private RequestValidationFilter requestValidationFilter;
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/api/login", "/api/register", "/api/admin/default-exists", "/api/faculty/login").permitAll()
+                .requestMatchers("/api/login", "/api/register", "/api/admin/default-exists", "/api/faculty/login", "/authenticate").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/faculty/**").hasRole("FACULTY")
+                .requestMatchers("/api/faculties/{facultyId}/courses/**").hasRole("FACULTY")
+                .requestMatchers("/api/faculty/**").hasAnyRole("ADMIN", "FACULTY")
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .addFilterBefore(requestValidationFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -54,4 +50,3 @@ public class WebSecurityConfiguration {
         return new BCryptPasswordEncoder();
     }
 }
-

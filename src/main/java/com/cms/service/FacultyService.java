@@ -8,9 +8,11 @@ import com.cms.enums.UserRole;
 import com.cms.repository.FacultyRepository;
 import com.cms.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -76,11 +78,23 @@ public class FacultyService {
 
     @Transactional
     public void deleteFaculty(Long id) {
-        Faculty faculty = facultyRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Faculty not found"));
+        System.out.println("Attempting to delete faculty with ID: " + id);
+
+        Faculty faculty = facultyRepository.findById(id).orElse(null);
+        if (faculty == null) {
+            System.out.println("Faculty with ID " + id + " not found or already deleted.");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Faculty not found or already deleted");
+        }
 
         User user = faculty.getUser();
         facultyRepository.delete(faculty);
-        userRepository.delete(user);
+
+        if (user != null) {
+            System.out.println("Deleting associated user with ID: " + user.getId());
+            userRepository.delete(user);
+        }
+
+        System.out.println("Faculty with ID " + id + " successfully deleted.");
     }
+
 }

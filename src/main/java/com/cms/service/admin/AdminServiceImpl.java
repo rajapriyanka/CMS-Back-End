@@ -105,7 +105,7 @@ public class AdminServiceImpl {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
             logger.info("Login successful for user: {}", request.getEmail());
-            return new AuthenticationResponse(jwt, user.getUserRole());
+            return new AuthenticationResponse(jwt, user.getUserRole(), null);
         } catch (BadCredentialsException e) {
             logger.error("Invalid credentials for user: {}", request.getEmail());
             throw new RuntimeException("Invalid username or password", e);
@@ -134,7 +134,7 @@ public class AdminServiceImpl {
             }
 
             logger.info("Admin login successful for user: {}", request.getEmail());
-            return new AuthenticationResponse(jwt, user.getUserRole());
+            return new AuthenticationResponse(jwt, user.getUserRole(), null);
         } catch (BadCredentialsException e) {
             logger.error("Invalid credentials for admin user: {}", request.getEmail());
             throw new RuntimeException("Invalid username or password", e);
@@ -162,8 +162,14 @@ public class AdminServiceImpl {
                 throw new RuntimeException("Unauthorized access");
             }
 
+            // Ensure faculty ID is returned
+            Faculty faculty = user.getFaculty();
+            if (faculty == null) {
+                throw new RuntimeException("Faculty information not found for user: " + request.getEmail());
+            }
+
             logger.info("Faculty login successful for user: {}", request.getEmail());
-            return new AuthenticationResponse(jwt, user.getUserRole());
+            return new AuthenticationResponse(jwt, user.getUserRole(), faculty.getId());
         } catch (BadCredentialsException e) {
             logger.error("Invalid credentials for faculty user: {}", request.getEmail());
             throw new RuntimeException("Invalid username or password", e);
@@ -198,4 +204,3 @@ public class AdminServiceImpl {
         return userRepository.findFirstByEmail(defaultAdminEmail).isPresent();
     }
 }
-

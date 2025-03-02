@@ -13,5 +13,6 @@ public interface FacultyRepository extends JpaRepository<Faculty, Long> {
 
 	Object findByUser_Email(String email);
 
-	Optional<User> findByUser(User user);
+	
+	Optional<Faculty> findByUser(User user);
 }

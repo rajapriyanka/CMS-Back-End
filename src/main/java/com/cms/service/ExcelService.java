@@ -3,6 +3,7 @@ package com.cms.service;
 import com.cms.entities.Student;
 import com.cms.entities.User;
 import com.cms.entities.Faculty;
+import com.cms.entities.Course;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
@@ -101,5 +102,57 @@ public class ExcelService {
         }
 
         return faculties;
+    }
+    
+    public List<Course> extractCoursesFromExcel(MultipartFile file) throws IOException {
+        List<Course> courses = new ArrayList<>();
+
+        try (InputStream is = file.getInputStream();
+             Workbook workbook = new XSSFWorkbook(is)) {
+            Sheet sheet = workbook.getSheetAt(0);
+            Iterator<Row> rows = sheet.iterator();
+
+            // Skip the header row
+            if (rows.hasNext()) {
+                rows.next();
+            }
+
+            while (rows.hasNext()) {
+                Row currentRow = rows.next();
+                Course course = new Course();
+
+                // Extract course details
+                course.setTitle(getCellValueAsString(currentRow.getCell(0)));
+                course.setCode(getCellValueAsString(currentRow.getCell(1)));
+                
+                // Handle numeric values
+                String contactPeriodsStr = getCellValueAsString(currentRow.getCell(2));
+                if (!contactPeriodsStr.isEmpty()) {
+                    course.setContactPeriods(Integer.parseInt(contactPeriodsStr));
+                }
+                
+                String semesterNoStr = getCellValueAsString(currentRow.getCell(3));
+                if (!semesterNoStr.isEmpty()) {
+                    course.setSemesterNo(Integer.parseInt(semesterNoStr));
+                }
+                
+                course.setDepartment(getCellValueAsString(currentRow.getCell(4)));
+                
+                // Handle course type enum
+                String courseTypeStr = getCellValueAsString(currentRow.getCell(5));
+                if (!courseTypeStr.isEmpty()) {
+                    try {
+                        course.setType(Course.CourseType.valueOf(courseTypeStr.toUpperCase()));
+                    } catch (IllegalArgumentException e) {
+                        // Default to ACADEMIC if invalid type is provided
+                        course.setType(Course.CourseType.ACADEMIC);
+                    }
+                }
+
+                courses.add(course);
+            }
+        }
+
+        return courses;
     }
 }

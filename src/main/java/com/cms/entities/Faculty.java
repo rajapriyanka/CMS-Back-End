@@ -1,5 +1,8 @@
 package com.cms.entities;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
@@ -13,6 +16,19 @@ public class Faculty {
 
     private String name;
     private String department;
+    
+    @OneToMany(mappedBy = "faculty", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<FacultyCourse> facultyCourses = new HashSet<>();
+
+    public void addFacultyCourse(FacultyCourse facultyCourse) {
+        facultyCourses.add(facultyCourse);
+        facultyCourse.setFaculty(this);
+    }
+
+    public void removeFacultyCourse(FacultyCourse facultyCourse) {
+        facultyCourses.remove(facultyCourse);
+        facultyCourse.setFaculty(null);
+    }
     public Long getId() {
 		return id;
 	}

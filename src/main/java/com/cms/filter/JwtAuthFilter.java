@@ -34,22 +34,30 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         final String authorizationHeader = request.getHeader("Authorization");
-
         logger.info("Processing request for URL: {}", request.getRequestURL());
 
         String username = null;
         String jwt = null;
 
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            jwt = authorizationHeader.substring(7);
+            jwt = authorizationHeader.substring(7).trim();
+
+            if (jwt.isEmpty()) {
+                logger.error("JWT token is empty.");
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT token is missing or empty.");
+                return;
+            }
+
             try {
                 username = jwtUtil.extractUsername(jwt);
                 logger.info("Extracted username from JWT: {}", username);
             } catch (Exception e) {
-                logger.error("Unable to extract username from JWT Token", e);
+                logger.error("Invalid JWT token format or signature.", e);
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid JWT token.");
+                return;
             }
         } else {
-            logger.warn("JWT Token does not begin with Bearer String or is missing");
+            logger.warn("Missing or improperly formatted Authorization header.");
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
@@ -63,10 +71,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 logger.info("Authentication successful for user: {}", username);
             } else {
                 logger.warn("Invalid JWT token for user: {}", username);
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid JWT token.");
+                return;
             }
         }
 
         chain.doFilter(request, response);
     }
 }
-

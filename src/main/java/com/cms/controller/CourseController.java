@@ -6,7 +6,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -45,6 +47,17 @@ public class CourseController {
     @GetMapping("/search")
     public ResponseEntity<List<Course>> searchCourses(@RequestParam String query) {
         return ResponseEntity.ok(courseService.searchCourses(query));
+    }
+    
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/upload")
+    public ResponseEntity<List<Course>> uploadCourses(@RequestParam("file") MultipartFile file) {
+        try {
+            List<Course> savedCourses = courseService.uploadCoursesFromExcel(file);
+            return ResponseEntity.ok(savedCourses);
+        } catch (IOException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 }
 

@@ -1,5 +1,9 @@
 package com.cms.entities;
 
+import java.util.HashSet;
+import java.util.Set;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -7,6 +11,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 @Entity
@@ -34,6 +39,18 @@ public class Course {
 
     @Column(nullable = false)
     private String department;
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<FacultyCourse> facultyCourses = new HashSet<>();
+
+    public void addFacultyCourse(FacultyCourse facultyCourse) {
+        facultyCourses.add(facultyCourse);
+        facultyCourse.setCourse(this);
+    }
+
+    public void removeFacultyCourse(FacultyCourse facultyCourse) {
+        facultyCourses.remove(facultyCourse);
+        facultyCourse.setCourse(null);
+    }
 
     // Getters and setters
 
@@ -95,7 +112,8 @@ public class Course {
 
     public enum CourseType {
         ACADEMIC,
-        NON_ACADEMIC
+        NON_ACADEMIC,
+        LAB
     }
 }
 

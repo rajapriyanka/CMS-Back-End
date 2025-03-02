@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class AuthenticationController {
+
     private static final Logger logger = LoggerFactory.getLogger(AuthenticationController.class);
 
     @Autowired
@@ -45,44 +46,34 @@ public class AuthenticationController {
     public ResponseEntity<?> createAuthenticationToken(@RequestBody AuthenticationRequest authenticationRequest) {
         try {
             logger.info("Attempting authentication for user: {}", authenticationRequest.getEmail());
-            
+
+            // Authenticate the user
             Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                    authenticationRequest.getEmail(),
-                    authenticationRequest.getPassword()
-                )
+                    new UsernamePasswordAuthenticationToken(
+                            authenticationRequest.getEmail(),
+                            authenticationRequest.getPassword()
+                    )
             );
 
-            if (authentication == null || !authentication.isAuthenticated()) {
+            if (!authentication.isAuthenticated()) {
                 logger.error("Authentication failed for user: {}", authenticationRequest.getEmail());
                 return ResponseEntity.badRequest().body("Authentication failed");
             }
 
+            // Load user details
             final UserDetails userDetails = userDetailsService.loadUserByUsername(authenticationRequest.getEmail());
-            
-            // Fetch the user and check if they are a faculty member
             User user = userRepository.findFirstByEmail(authenticationRequest.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                    .orElseThrow(() -> new RuntimeException("User not found"));
 
-            User faculty = facultyRepository.findByUser(user).orElse(null);
-            Long facultyId = faculty != null ? faculty.getId() : null;
+            Faculty faculty = facultyRepository.findByUser(user).orElse(null);
+            Long facultyId = (faculty != null) ? faculty.getId() : null;
 
-            final String token;
-            if (facultyId != null) {
-                token = jwtUtil.generateToken(userDetails, facultyId);
-                logger.info("Generated token with faculty ID for user: {}", authenticationRequest.getEmail());
-            } else {
-                token = jwtUtil.generateToken(userDetails);
-                logger.info("Generated token without faculty ID for user: {}", authenticationRequest.getEmail());
-            }
+            final String token = jwtUtil.generateToken(userDetails);
+            logger.info("Token generated for user: {}, Role: {}, Faculty ID: {}",
+                    authenticationRequest.getEmail(), user.getUserRole(), facultyId);
 
-            if (token == null) {
-                logger.error("Token generation failed for user: {}", authenticationRequest.getEmail());
-                return ResponseEntity.internalServerError().body("Token generation failed");
-            }
-
-            logger.info("Authentication successful for user: {}", authenticationRequest.getEmail());
-            return ResponseEntity.ok(new AuthenticationResponse(token, user.getUserRole()));
+            // Return the response with facultyId if the user is a faculty
+            return ResponseEntity.ok(new AuthenticationResponse(token, user.getUserRole(), facultyId));
 
         } catch (Exception e) {
             logger.error("Authentication error: ", e);
@@ -90,4 +81,3 @@ public class AuthenticationController {
         }
     }
 }
-

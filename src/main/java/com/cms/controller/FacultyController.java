@@ -6,11 +6,15 @@ import com.cms.dto.FacultyUpdateRequest;
 import com.cms.entities.Faculty;
 import com.cms.service.ExcelService;
 import com.cms.service.FacultyService;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,26 +32,29 @@ public class FacultyController {
     
    
 
-    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/upload")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> uploadFaculty(@RequestParam("file") MultipartFile file) {
         try {
             List<Faculty> faculties = excelService.extractFacultyFromExcel(file);
-            for (Faculty faculty : faculties) {
-                facultyService.registerFaculty(new FacultyRegistrationRequest(
-                    faculty.getName(),
-                    faculty.getUser().getEmail(),
-                    faculty.getUser().getPassword(),
-                    faculty.getDepartment(),
-                    faculty.getDesignation(),
-                    faculty.getMobileNo()
-                ));
-            }
+            faculties.forEach(faculty -> facultyService.registerFaculty(new FacultyRegistrationRequest(
+                faculty.getName(),
+                faculty.getUser().getEmail(),
+                faculty.getUser().getPassword(),
+                faculty.getDepartment(),
+                faculty.getDesignation(),
+                faculty.getMobileNo()
+            )));
             return ResponseEntity.ok("Faculty members uploaded successfully");
+        } catch (DataIntegrityViolationException e) {
+            return ResponseEntity.badRequest().body("Duplicate faculty entry or data error: " + e.getMessage());
+        } catch (InvalidFormatException e) {
+            return ResponseEntity.badRequest().body("Invalid Excel file format: " + e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error uploading faculty members: " + e.getMessage());
         }
     }
+
 
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -86,20 +93,26 @@ public class FacultyController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteFaculty(@PathVariable Long id) {
-        facultyService.deleteFaculty(id);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<String> deleteFaculty(@PathVariable Long id) {
+        try {
+            facultyService.deleteFaculty(id);
+            return ResponseEntity.ok("Faculty deleted successfully.");
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
+        }
     }
 
     private FacultyDTO convertToDTO(Faculty faculty) {
         return new FacultyDTO(
-            faculty.getId(),
+            faculty.getUser().getId(), // User ID
             faculty.getName(),
             faculty.getUser().getEmail(),
             faculty.getDepartment(),
             faculty.getDesignation(),
-            faculty.getMobileNo()
+            faculty.getMobileNo(),
+            faculty.getId() // Faculty-specific ID
         );
     }
+
 }
 

@@ -1,10 +1,15 @@
 package com.cms.entities;
 
+import java.util.HashSet;
+import java.util.Set;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 @Entity
@@ -21,6 +26,21 @@ public class Batch {
     private String department;
 
     private String section;
+    
+    @OneToMany(mappedBy = "batch", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<FacultyCourse> facultyCourses = new HashSet<>();
+
+    // Getters and setters...
+
+    public void addFacultyCourse(FacultyCourse facultyCourse) {
+        facultyCourses.add(facultyCourse);
+        facultyCourse.setBatch(this);
+    }
+
+    public void removeFacultyCourse(FacultyCourse facultyCourse) {
+        facultyCourses.remove(facultyCourse);
+        facultyCourse.setBatch(null);
+    }
 
     // Getters and setters
 
@@ -55,4 +75,9 @@ public class Batch {
     public void setSection(String section) {
         this.section = section;
     }
+
+	public Long getCourseId() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }
