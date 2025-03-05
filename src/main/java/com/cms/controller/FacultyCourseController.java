@@ -18,6 +18,17 @@ public class FacultyCourseController {
 
     @Autowired
     private FacultyCourseService facultyCourseService;
+    
+
+    /**
+     * Fetch assigned courses for a faculty.
+     */
+    @GetMapping("/faculty/{facultyId}/assigned-courses")
+    @PreAuthorize("hasRole('FACULTY')")
+    public ResponseEntity<List<FacultyCourseDTO>> getAssignedCourses(@PathVariable Long facultyId) {
+        List<FacultyCourseDTO> assignedCourses = facultyCourseService.getAssignedCourses(facultyId);
+        return ResponseEntity.ok(assignedCourses);
+    }
 
     /**
      * Fetch all available courses.
@@ -64,7 +75,7 @@ public class FacultyCourseController {
      * Remove a faculty member from a course and batch.
      */
     @DeleteMapping("/{facultyId}/courses/{courseId}/batch/{batchId}")
-    @PreAuthorize("hasRole('FACULTY') and @userSecurity.checkFacultyId(authentication, #facultyId)")
+    @PreAuthorize("hasRole('FACULTY') ")
     public ResponseEntity<Void> removeCourse(@PathVariable Long facultyId, @PathVariable Long courseId, @PathVariable Long batchId) {
         facultyCourseService.removeCourse(facultyId, courseId, batchId);
         return ResponseEntity.ok().build();

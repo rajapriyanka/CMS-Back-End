@@ -22,12 +22,17 @@ public class WebSecurityConfiguration {
 
     @Autowired
     private JwtAuthFilter jwtAuthFilter;
+     
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(authz -> authz
+                // Allow public access to email action endpoints
+                .requestMatchers("/api/email-actions/**").permitAll()
+                
+                // Existing security rules
                 .requestMatchers("/api/login", "/api/register", "/api/admin/default-exists", "/api/faculty/login", "/authenticate").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/faculties/{facultyId}/courses/**").hasRole("FACULTY")
@@ -39,6 +44,7 @@ public class WebSecurityConfiguration {
 
         return http.build();
     }
+
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {

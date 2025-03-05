@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class FacultyCourseService {
@@ -88,4 +89,27 @@ public class FacultyCourseService {
                 .orElseThrow(() -> new RuntimeException("Faculty course not found"));
         facultyCourseRepository.delete(facultyCourse);
     }
+
+    /**
+     * Get assigned courses for a faculty.
+     */
+    @Transactional(readOnly = true)
+    public List<FacultyCourseDTO> getAssignedCourses(Long facultyId) {
+        List<FacultyCourse> facultyCourses = facultyCourseRepository.findByFacultyId(facultyId);
+        return facultyCourses.stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
+
+    private FacultyCourseDTO convertToDTO(FacultyCourse facultyCourse) {
+        FacultyCourseDTO dto = new FacultyCourseDTO();
+        dto.setCourseId(facultyCourse.getCourse().getId());
+        dto.setCode(facultyCourse.getCourse().getCode());
+        dto.setTitle(facultyCourse.getCourse().getTitle());
+        dto.setBatchId(facultyCourse.getBatch().getId());
+        dto.setBatchName(facultyCourse.getBatch().getBatchName());
+        dto.setDepartment(facultyCourse.getBatch().getDepartment());
+        dto.setSection(facultyCourse.getBatch().getSection());
+        return dto;
+    }
+
+    // Other existing methods remain unchanged...
 }
