@@ -12,6 +12,8 @@ public interface FacultyRepository extends JpaRepository<Faculty, Long> {
     List<Faculty> findByNameContainingIgnoreCase(String name);
 
 	Object findByUser_Email(String email);
+	
+	
 
 	
 	Optional<Faculty> findByUser(User user);

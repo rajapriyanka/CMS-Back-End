@@ -68,7 +68,9 @@ public class EmailService {
                     + "<p><a href='" + approveUrl + "' style='padding: 10px; background: green; color: white; text-decoration: none;'>Approve</a>"
                     + " &nbsp; "
                     + "<a href='" + rejectUrl + "' style='padding: 10px; background: red; color: white; text-decoration: none;'>Reject</a></p>"
-                    + "<p>Thank you.</p>";
+                    + "<p>Thank you.</p>"
+                    +"<p>With Regards,</p>"
+                    +"<p>CMS.</p>";
             
             helper.setText(htmlBody, true);
             mailSender.send(message);

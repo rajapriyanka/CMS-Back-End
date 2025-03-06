@@ -35,7 +35,7 @@ public class WebSecurityConfiguration {
                 // Existing security rules
                 .requestMatchers("/api/login", "/api/register", "/api/admin/default-exists", "/api/faculty/login", "/authenticate").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/faculties/{facultyId}/courses/**").hasRole("FACULTY")
+                .requestMatchers("/api/faculties/{facultyId}/courses/**").hasAnyRole("FACULTY","ADMIN")
                 .requestMatchers("/api/faculty/**").hasAnyRole("ADMIN", "FACULTY")
                 .anyRequest().authenticated()
             )

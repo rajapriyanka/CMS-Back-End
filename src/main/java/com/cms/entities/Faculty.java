@@ -1,6 +1,7 @@
 package com.cms.entities;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -16,6 +17,9 @@ public class Faculty {
 
     private String name;
     private String department;
+    
+    @OneToMany(mappedBy = "faculty", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<TimetableEntry> timetableEntries;
     
     @OneToMany(mappedBy = "faculty", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<FacultyCourse> facultyCourses = new HashSet<>();

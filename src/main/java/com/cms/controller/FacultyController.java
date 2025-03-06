@@ -31,7 +31,6 @@ public class FacultyController {
     private ExcelService excelService;
     
    
-
     @PostMapping("/upload")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> uploadFaculty(@RequestParam("file") MultipartFile file) {
@@ -85,22 +84,24 @@ public class FacultyController {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    @PutMapping("/{id}")
-    public ResponseEntity<FacultyDTO> updateFaculty(@PathVariable Long id, @RequestBody FacultyUpdateRequest request) {
-        Faculty faculty = facultyService.updateFaculty(id, request);
+    @PutMapping("/user/{userId}")
+    public ResponseEntity<FacultyDTO> updateFacultyByUserId(@PathVariable Long userId, @RequestBody FacultyUpdateRequest request) {
+        Faculty faculty = facultyService.updateFacultyByUserId(userId, request);
         return ResponseEntity.ok(convertToDTO(faculty));
     }
 
+
     @PreAuthorize("hasRole('ADMIN')")
-    @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteFaculty(@PathVariable Long id) {
+    @DeleteMapping("/user/{userId}")
+    public ResponseEntity<String> deleteFacultyByUserId(@PathVariable Long userId) {
         try {
-            facultyService.deleteFaculty(id);
+            facultyService.deleteFacultyByUserId(userId);
             return ResponseEntity.ok("Faculty deleted successfully.");
         } catch (ResponseStatusException e) {
             return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
         }
     }
+
 
     private FacultyDTO convertToDTO(Faculty faculty) {
         return new FacultyDTO(

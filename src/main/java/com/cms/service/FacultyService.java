@@ -6,6 +6,8 @@ import com.cms.entities.Faculty;
 import com.cms.entities.User;
 import com.cms.enums.UserRole;
 import com.cms.repository.FacultyRepository;
+import com.cms.repository.FacultyCourseRepository;
+import com.cms.repository.TimetableEntryRepository;
 import com.cms.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -24,9 +26,16 @@ public class FacultyService {
 
     @Autowired
     private UserRepository userRepository;
+    
+    @Autowired
+    private TimetableEntryRepository timetableEntryRepository;
+    
+    @Autowired
+    private FacultyCourseRepository facultyCourseRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+    
 
     public List<Faculty> getAllFaculty() {
         return facultyRepository.findAll();
@@ -58,16 +67,18 @@ public class FacultyService {
     }
 
     @Transactional
-    public Faculty updateFaculty(Long id, FacultyUpdateRequest request) {
-        Faculty faculty = facultyRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Faculty not found"));
+    public Faculty updateFacultyByUserId(Long userId, FacultyUpdateRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Faculty faculty = facultyRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Faculty not found for the given User ID"));
 
         faculty.setName(request.getName());
         faculty.setDepartment(request.getDepartment());
         faculty.setDesignation(request.getDesignation());
         faculty.setMobileNo(request.getMobileNo());
 
-        User user = faculty.getUser();
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getMobileNo()));
@@ -76,25 +87,24 @@ public class FacultyService {
         return facultyRepository.save(faculty);
     }
 
+
     @Transactional
-    public void deleteFaculty(Long id) {
-        System.out.println("Attempting to delete faculty with ID: " + id);
+    public void deleteFacultyByUserId(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
-        Faculty faculty = facultyRepository.findById(id).orElse(null);
-        if (faculty == null) {
-            System.out.println("Faculty with ID " + id + " not found or already deleted.");
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Faculty not found or already deleted");
-        }
+        Faculty faculty = facultyRepository.findByUser(user)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Faculty not found for the given User ID"));
 
-        User user = faculty.getUser();
+        // Delete related timetable entries first
+        timetableEntryRepository.deleteByFaculty(faculty);
+
+        // Delete faculty record
         facultyRepository.delete(faculty);
 
-        if (user != null) {
-            System.out.println("Deleting associated user with ID: " + user.getId());
-            userRepository.delete(user);
-        }
-
-        System.out.println("Faculty with ID " + id + " successfully deleted.");
+        // Delete associated user record
+        userRepository.delete(user);
     }
+
 
 }

@@ -55,7 +55,7 @@ public class FacultyCourseController {
      * Fetch all available batches.
      */
     @GetMapping("/batches")
-    @PreAuthorize("hasRole('FACULTY')")
+    @PreAuthorize("hasRole('FACULTY') or hasRole('ADMIN')")
     public ResponseEntity<List<Batch>> getAllBatches() {
         List<Batch> batches = facultyCourseService.getAllBatches();
         return ResponseEntity.ok(batches);
