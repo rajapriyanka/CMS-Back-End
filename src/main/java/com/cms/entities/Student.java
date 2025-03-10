@@ -19,6 +19,8 @@ public class Student {
     private String department;
     private String batchName;
     
+  
+    
     @Column(name = "mobile_number")
     private String mobileNumber;
 

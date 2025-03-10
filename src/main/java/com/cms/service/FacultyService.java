@@ -1,11 +1,13 @@
 package com.cms.service;
 
+import com.cms.dto.FacultyProfileUpdateRequest;
 import com.cms.dto.FacultyRegistrationRequest;
 import com.cms.dto.FacultyUpdateRequest;
 import com.cms.entities.Faculty;
 import com.cms.entities.User;
 import com.cms.enums.UserRole;
 import com.cms.repository.FacultyRepository;
+import com.cms.repository.LeaveRepository;
 import com.cms.repository.FacultyCourseRepository;
 import com.cms.repository.TimetableEntryRepository;
 import com.cms.repository.UserRepository;
@@ -35,6 +37,10 @@ public class FacultyService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+    
+    @Autowired 
+    private LeaveRepository leaveRepository;
+    
     
 
     public List<Faculty> getAllFaculty() {
@@ -96,6 +102,9 @@ public class FacultyService {
         Faculty faculty = facultyRepository.findByUser(user)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Faculty not found for the given User ID"));
 
+        // Delete associated leave requests before deleting faculty
+        leaveRepository.deleteByFaculty(faculty);
+
         // Delete related timetable entries first
         timetableEntryRepository.deleteByFaculty(faculty);
 
@@ -107,4 +116,39 @@ public class FacultyService {
     }
 
 
+    /**
+     * Get faculty by email
+     */
+    public Faculty getFacultyByEmail(String email) {
+        User user = userRepository.findFirstByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+                
+        return facultyRepository.findByUser(user)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Faculty not found for the given email"));
+    }
+    
+    /**
+     * Update faculty profile by email
+     */
+    @Transactional
+    public Faculty updateFacultyProfile(String email, FacultyProfileUpdateRequest request) {
+        User user = userRepository.findFirstByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+                
+        Faculty faculty = facultyRepository.findByUser(user)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Faculty not found for the given email"));
+        
+        // Update faculty details
+        faculty.setName(request.getName());
+        faculty.setDepartment(request.getDepartment());
+        faculty.setDesignation(request.getDesignation());
+        faculty.setMobileNo(request.getMobileNo());
+        
+        // Update user name to keep it in sync
+        user.setName(request.getName());
+        
+        userRepository.save(user);
+        return facultyRepository.save(faculty);
+    }
 }
+

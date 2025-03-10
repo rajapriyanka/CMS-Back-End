@@ -47,6 +47,19 @@ public class AdminController {
             return ResponseEntity.badRequest().body("Authentication failed: " + e.getMessage());
         }
     }
+    
+    @PostMapping("/student/login")
+    public ResponseEntity<?> studentLogin(@RequestBody AuthenticationRequest request) {
+        logger.info("Student login attempt for user: {}", request.getEmail());
+        try {
+            AuthenticationResponse response = adminService.studentLogin(request);
+            logger.info("Student login successful for user: {}", request.getEmail());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Student login failed for user: {}", request.getEmail(), e);
+            return ResponseEntity.badRequest().body("Authentication failed: " + e.getMessage());
+        }
+    }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/admin/register/faculty")

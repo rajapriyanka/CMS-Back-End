@@ -22,21 +22,26 @@ public class WebSecurityConfiguration {
 
     @Autowired
     private JwtAuthFilter jwtAuthFilter;
-     
-
+    
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(authz -> authz
+                // Allow public access to student login
+                .requestMatchers("/api/student/login").permitAll()
+
                 // Allow public access to email action endpoints
                 .requestMatchers("/api/email-actions/**").permitAll()
                 
+                .requestMatchers("/api/student/profile/**").hasRole("STUDENT")
+
                 // Existing security rules
                 .requestMatchers("/api/login", "/api/register", "/api/admin/default-exists", "/api/faculty/login", "/authenticate").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/faculties/{facultyId}/courses/**").hasAnyRole("FACULTY","ADMIN")
-                .requestMatchers("/api/faculty/**").hasAnyRole("ADMIN", "FACULTY")
+                .requestMatchers("/api/faculty/**").hasAnyRole("ADMIN", "FACULTY","STUDENT")
+                .requestMatchers("/api/timetable/**").hasAnyRole("ADMIN","FACULTY","STUDENT")
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -44,7 +49,6 @@ public class WebSecurityConfiguration {
 
         return http.build();
     }
-
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
@@ -56,3 +60,4 @@ public class WebSecurityConfiguration {
         return new BCryptPasswordEncoder();
     }
 }
+

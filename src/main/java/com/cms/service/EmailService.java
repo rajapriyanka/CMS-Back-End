@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -117,5 +118,37 @@ public class EmailService {
             logger.error("Failed to send leave status update email to: {}. Error: {}", to, e.getMessage(), e);
             return false;
         }
+    }
+    
+    /**
+     * Send OTP email for password change
+     */
+    public void sendOtpEmail(String toEmail, String otp) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(toEmail);
+        message.setSubject("Password Change OTP");
+        message.setText("Your OTP for password change is: " + otp + 
+                        "\nThis OTP will expire in 10 minutes.");
+        
+        mailSender.send(message);
+    }
+    
+    /**
+     * Create a new MimeMessage
+     */
+    public MimeMessage createMimeMessage() {
+        return mailSender.createMimeMessage();
+    }
+    
+    /**
+     * Send an email message
+     */
+    public void sendEmail(MimeMessage message) {
+        if (!mailEnabled) {
+            logger.warn("Email sending is disabled.");
+            return;
+        }
+        
+        mailSender.send(message);
     }
 }

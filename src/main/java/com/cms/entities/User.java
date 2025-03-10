@@ -14,7 +14,12 @@ public class User {
 
     private String name;
     private String email;
+   
     private String password;
+    
+    
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Student student;
 
     public Long getId() {
 		return id;
@@ -70,6 +75,14 @@ public class User {
     @OneToOne(mappedBy = "user")
     @JsonBackReference
     private Faculty faculty;
+
+	public Student getStudent() {
+		return student;
+	}
+	
+	public void setStudent(Student student) {
+		this.student = student;
+	}
 
     // Getters and setters
     // ...

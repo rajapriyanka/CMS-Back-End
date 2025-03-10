@@ -5,9 +5,11 @@ import com.cms.dto.AuthenticationResponse;
 import com.cms.dto.FacultyRegistrationRequest;
 import com.cms.dto.AdminRegistrationRequest;
 import com.cms.entities.Faculty;
+import com.cms.entities.Student;
 import com.cms.entities.User;
 import com.cms.enums.UserRole;
 import com.cms.repository.FacultyRepository;
+import com.cms.repository.StudentRepository;
 import com.cms.repository.UserRepository;
 import com.cms.utils.JwtUtil;
 import jakarta.annotation.PostConstruct;
@@ -30,6 +32,7 @@ public class AdminServiceImpl {
 
     private final UserRepository userRepository;
     private final FacultyRepository facultyRepository;
+    private final StudentRepository studentRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
@@ -42,11 +45,13 @@ public class AdminServiceImpl {
 
     public AdminServiceImpl(UserRepository userRepository,
                             FacultyRepository facultyRepository,
+                            StudentRepository studentRepository,
                             PasswordEncoder passwordEncoder,
                             AuthenticationManager authenticationManager,
                             JwtUtil jwtUtil) {
         this.userRepository = userRepository;
         this.facultyRepository = facultyRepository;
+        this.studentRepository = studentRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
@@ -178,7 +183,58 @@ public class AdminServiceImpl {
             throw new RuntimeException("Login failed", e);
         }
     }
+    
 
+    public AuthenticationResponse studentLogin(AuthenticationRequest request) {
+        logger.info("Attempting student login for user: {}", request.getEmail());
+
+        try {
+            // Fetch user from DB
+            User user = userRepository.findFirstByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+            // Ensure the user has the STUDENT role
+            if (user.getUserRole() != UserRole.STUDENT) {
+                logger.error("Non-student user attempted to log in: {}", request.getEmail());
+                throw new RuntimeException("Unauthorized access");
+            }
+
+            // Fetch linked student entity
+            Student student = user.getStudent();
+            if (student == null) {
+                throw new RuntimeException("Student record not found for user: " + request.getEmail());
+            }
+
+            // Validate password
+            logger.info("Stored Hashed Password: {}", user.getPassword());
+            logger.info("Entered Password: {}", request.getPassword());
+
+            if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+                logger.error("Password mismatch for user: {}", request.getEmail());
+                throw new RuntimeException("Invalid username or password");
+            }
+
+            // Authenticate using Spring Security
+            Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+            );
+
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            String jwt = jwtUtil.generateToken(userDetails);
+
+            logger.info("Student login successful for user: {}", request.getEmail());
+            return new AuthenticationResponse(jwt, user.getUserRole(), student.getId());
+
+        } catch (BadCredentialsException e) {
+            logger.error("Invalid credentials for student user: {}", request.getEmail());
+            throw new RuntimeException("Invalid username or password", e);
+        } catch (Exception e) {
+            logger.error("Student login failed for user: {}", request.getEmail(), e);
+            throw new RuntimeException("Login failed", e);
+        }
+    }
+
+    
     @Transactional
     public User registerAdmin(AdminRegistrationRequest request) {
         logger.info("Attempting to register admin: {}", request.getEmail());

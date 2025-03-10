@@ -45,7 +45,7 @@ public class LeaveController {
     }
 
     @GetMapping("/approver/{approverId}")
-    @PreAuthorize("hasRole('FACULTY')")
+    @PreAuthorize("hasRole('FACULTY') or hasRole('ADMIN') or hasRole('STUDENT')")
     public ResponseEntity<List<LeaveResponseDTO>> getLeaveRequestsForApprover(@PathVariable Long approverId) {
         List<LeaveResponseDTO> leaves = leaveService.getLeaveRequestsForApprover(approverId);
         return ResponseEntity.ok(leaves);

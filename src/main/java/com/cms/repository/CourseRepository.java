@@ -12,6 +12,7 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     List<Course> findByTitleContainingOrCodeContaining(String title, String code);
     List<Course> findByDepartment(String department);
     Optional<Course> findByCode(String code);
+    List<Course> findBySemesterNo(Integer semesterNo);
     
 }
 

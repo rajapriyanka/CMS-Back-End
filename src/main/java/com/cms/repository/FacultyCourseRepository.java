@@ -19,5 +19,7 @@ public interface FacultyCourseRepository extends JpaRepository<FacultyCourse, Lo
     @Modifying
     @Query("DELETE FROM FacultyCourse fc WHERE fc.faculty.id = :facultyId")
     int deleteByFacultyId(@Param("facultyId") Long facultyId);
+
+	Optional<FacultyCourse> findByFacultyIdAndCourseId(Long facultyId, Long courseId);
 }
 

@@ -1,19 +1,23 @@
 package com.cms.service;
 
+import com.cms.dto.StudentProfileUpdateRequest;
 import com.cms.entities.Student;
 import com.cms.entities.User;
 import com.cms.enums.UserRole;
 import com.cms.repository.StudentRepository;
 import com.cms.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class StudentService {
@@ -29,6 +33,36 @@ public class StudentService {
 
     @Autowired
     private ExcelService excelService;
+    
+    /**
+     * Get student by email
+     */
+    public Student getStudentByEmail(String email) {
+        if (Objects.isNull(email) || email.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email must not be null or empty");
+        }
+
+        return studentRepository.findByUserEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found with email: " + email));
+    }
+    
+    /**
+     * Update student profile
+     */
+    @Transactional
+    public Student updateStudentProfile(String email, StudentProfileUpdateRequest request) {
+        Student student = getStudentByEmail(email);
+        
+        if (request.getName() != null && !request.getName().isEmpty()) {
+            student.setName(request.getName());
+        }
+        
+        if (request.getMobileNumber() != null && !request.getMobileNumber().isEmpty()) {
+            student.setMobileNumber(request.getMobileNumber());
+        }
+        
+        return studentRepository.save(student);
+    }
 
     public List<Student> getAllStudents() {
         return studentRepository.findAllWithUsers();

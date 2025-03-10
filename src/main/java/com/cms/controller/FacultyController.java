@@ -56,7 +56,7 @@ public class FacultyController {
 
 
 
-    @PreAuthorize("hasRole('FACULTY') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('FACULTY') or hasRole('ADMIN') or hasRole ('STUDENT')")
     @GetMapping
     public ResponseEntity<List<FacultyDTO>> getAllFaculty() {
         List<Faculty> faculties = facultyService.getAllFaculty();
