@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,6 +25,12 @@ public class FacultyCourseService {
 
     @Autowired
     private BatchRepository batchRepository;
+    
+    @Autowired
+    private TimetableEntryRepository timetableEntryRepository;
+    
+    @Autowired
+    private SubstituteRequestRepository substituteRequestRepository;
 
     /**
      * Fetches all available courses.
@@ -39,8 +46,12 @@ public class FacultyCourseService {
         return batchRepository.findAll();
     }
 
+    /**
+     * Adds a course to a batch for a faculty, checking for duplicates
+     * @return A message indicating the result of the operation
+     */
     @Transactional
-    public void addCourseToBatch(Long facultyId, Long courseId, Long batchId) {
+    public String addCourseToBatch(Long facultyId, Long courseId, Long batchId) {
         Faculty faculty = facultyRepository.findById(facultyId)
                 .orElseThrow(() -> new RuntimeException("Faculty not found"));
 
@@ -50,13 +61,25 @@ public class FacultyCourseService {
         Batch batch = batchRepository.findById(batchId)
                 .orElseThrow(() -> new RuntimeException("Batch not found"));
 
-        // Ensure faculty is assigned
-        FacultyCourse facultyCourse = new FacultyCourse();
-        facultyCourse.setFaculty(faculty);
-        facultyCourse.setCourse(course);
-        facultyCourse.setBatch(batch);
+        // Check if the faculty-course-batch entry already exists
+        Optional<FacultyCourse> existingEntry = facultyCourseRepository
+                .findByFacultyIdAndCourseIdAndBatchId(facultyId, courseId, batchId);
 
-        facultyCourseRepository.save(facultyCourse);
+        if (existingEntry.isPresent()) {
+            // Entry already exists, return a message
+            return "Course '" + course.getTitle() + "' is already assigned to this faculty for batch " + 
+                   batch.getBatchName() + " " + batch.getSection();
+        } else {
+            // Create a new faculty-course entry
+            FacultyCourse facultyCourse = new FacultyCourse();
+            facultyCourse.setFaculty(faculty);
+            facultyCourse.setCourse(course);
+            facultyCourse.setBatch(batch);
+            facultyCourseRepository.save(facultyCourse);
+            
+            return "Course '" + course.getTitle() + "' successfully assigned to faculty for batch " + 
+                   batch.getBatchName() + " " + batch.getSection();
+        }
     }
 
     @Transactional
@@ -73,20 +96,37 @@ public class FacultyCourseService {
                 dto.getBatchName(), dto.getDepartment(), dto.getSection())
                 .orElseThrow(() -> new RuntimeException("Batch not found. Please select an existing batch."));
 
-        // Check if faculty is already assigned to the same course and batch
-        if (facultyCourseRepository.findByFacultyIdAndCourseIdAndBatchId(facultyId, course.getId(), batch.getId()).isPresent()) {
-            throw new RuntimeException("This course is already assigned to the faculty for the selected batch.");
-        }
+        // Check if the faculty-course-batch entry already exists
+        Optional<FacultyCourse> existingFacultyCourse = facultyCourseRepository.findByFacultyIdAndCourseIdAndBatchId(
+                facultyId, course.getId(), batch.getId());
 
-        // Assign faculty to the course and batch
-        FacultyCourse facultyCourse = new FacultyCourse(faculty, course, batch);
-        return facultyCourseRepository.save(facultyCourse);
+        if (existingFacultyCourse.isPresent()) {
+            // Entry already exists, just return the existing entry
+            return existingFacultyCourse.get();
+        } else {
+            // Create a new faculty-course entry
+            FacultyCourse facultyCourse = new FacultyCourse(faculty, course, batch);
+            return facultyCourseRepository.save(facultyCourse);
+        }
     }
 
     @Transactional
     public void removeCourse(Long facultyId, Long courseId, Long batchId) {
         FacultyCourse facultyCourse = facultyCourseRepository.findByFacultyIdAndCourseIdAndBatchId(facultyId, courseId, batchId)
                 .orElseThrow(() -> new RuntimeException("Faculty course not found"));
+
+        // Step 1: Find all timetable entries for this faculty-course-batch
+        List<TimetableEntry> timetableEntries = timetableEntryRepository.findByBatchIdAndAcademicYearAndSemester(batchId, "2025", "Spring");
+
+        // Step 2: Delete all substitute requests linked to these timetable entries
+        for (TimetableEntry entry : timetableEntries) {
+            substituteRequestRepository.deleteByTimetableEntryId(entry.getId());
+        }
+
+        // Step 3: Delete timetable entries
+        timetableEntryRepository.deleteByFacultyIdAndCourseIdAndBatchId(facultyId, courseId, batchId);
+
+        // Step 4: Delete the faculty-course mapping
         facultyCourseRepository.delete(facultyCourse);
     }
 
@@ -111,5 +151,14 @@ public class FacultyCourseService {
         return dto;
     }
 
+    /**
+     * Checks if a faculty-course-batch combination already exists
+     * @return true if the combination exists, false otherwise
+     */
+    public boolean isDuplicateFacultyCourse(Long facultyId, Long courseId, Long batchId) {
+        return facultyCourseRepository.countByFacultyCourseBatch(facultyId, courseId, batchId) > 0;
+    }
+
     // Other existing methods remain unchanged...
 }
+

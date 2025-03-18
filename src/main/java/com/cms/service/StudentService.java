@@ -4,6 +4,8 @@ import com.cms.dto.StudentProfileUpdateRequest;
 import com.cms.entities.Student;
 import com.cms.entities.User;
 import com.cms.enums.UserRole;
+import com.cms.repository.AttendanceRepository;
+import com.cms.repository.StudentLeaveRepository;
 import com.cms.repository.StudentRepository;
 import com.cms.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +35,12 @@ public class StudentService {
 
     @Autowired
     private ExcelService excelService;
+    
+    @Autowired
+    private StudentLeaveRepository studentLeaveRepository;
+    
+    @Autowired
+    private AttendanceRepository attendanceRepository;
     
     /**
      * Get student by email
@@ -103,8 +111,16 @@ public class StudentService {
 
         User user = student.getUser();
         user.setName(updatedStudent.getName());
-        user.setEmail(updatedStudent.getUser().getEmail());
-        user.setPassword(passwordEncoder.encode(updatedStudent.getUser().getPassword()));
+        
+        if (updatedStudent.getUser() != null) {
+            if (updatedStudent.getUser().getEmail() != null) {
+                user.setEmail(updatedStudent.getUser().getEmail());
+            }
+            
+            if (updatedStudent.getUser().getPassword() != null) {
+                user.setPassword(passwordEncoder.encode(updatedStudent.getUser().getPassword()));
+            }
+        }
 
         userRepository.save(user);
         return studentRepository.save(student);
@@ -113,11 +129,27 @@ public class StudentService {
     @Transactional
     public void deleteStudent(Long id) {
         Student student = studentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Student not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
 
         User user = student.getUser();
+
+        // Step 1: Delete student leave records
+        studentLeaveRepository.deleteByStudentId(id);
+
+        // Step 2: Delete attendance records
+        attendanceRepository.deleteByStudentId(id);
+
+        // Step 3: Break relationship before deleting student
+        student.setUser(null);
+        studentRepository.save(student);
+
+        // Step 4: Delete student record
         studentRepository.delete(student);
-        userRepository.delete(user);
+
+        // Step 5: Delete user record (if exists)
+        if (user != null) {
+            userRepository.delete(user);
+        }
     }
 
     @Transactional
@@ -150,6 +182,7 @@ public class StudentService {
 
         return registeredStudents;
     }
+    
     public List<Student> filterStudents(String department, String batchName) {
         return studentRepository.findAllWithUsers().stream()
                 .filter(student -> {
@@ -159,8 +192,8 @@ public class StudentService {
                 })
                 .toList(); // Collect the filtered students into a list
     }
+    
     public List<Student> getFilteredStudents(String department, String batchName) {
         return filterStudents(department, batchName);
     }
-
 }

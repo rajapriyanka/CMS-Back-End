@@ -34,8 +34,8 @@ public class BatchController {
         batchService.deleteBatch(id);
         return ResponseEntity.ok().build();
     }
-
-    @PreAuthorize("hasRole('ADMIN')")
+    
+    @PreAuthorize("hasRole('FACULTY') or hasRole('ADMIN') or hasRole('STUDENT')")
     @GetMapping
     public ResponseEntity<List<Batch>> getAllBatches() {
         return ResponseEntity.ok(batchService.getAllBatches());

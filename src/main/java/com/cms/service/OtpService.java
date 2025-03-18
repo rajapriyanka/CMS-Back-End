@@ -72,5 +72,46 @@ public class OtpService {
             this.expiryTime = expiryTime;
         }
     }
+    /**
+     * Generate a new OTP specifically for admin password reset
+     */
+    public String generateAdminPasswordResetOtp(String email) {
+        String otp = generateRandomOtp();
+        LocalDateTime expiryTime = LocalDateTime.now().plusMinutes(OTP_EXPIRY_MINUTES);
+        
+        // Use a specific key format for admin password resets
+        String key = "admin_pwd_reset:" + email;
+        otpMap.put(key, new OtpData(otp, expiryTime));
+        
+        return otp;
+    }
+
+    /**
+     * Validate the OTP specifically for admin password reset
+     */
+    public boolean validateAdminPasswordResetOtp(String email, String otp) {
+        String key = "admin_pwd_reset:" + email;
+        OtpData otpData = otpMap.get(key);
+        
+        if (otpData == null) {
+            return false;
+        }
+        
+        // Check if OTP is expired
+        if (LocalDateTime.now().isAfter(otpData.expiryTime)) {
+            otpMap.remove(key);
+            return false;
+        }
+        
+        // Check if OTP matches
+        boolean isValid = otpData.otp.equals(otp);
+        
+        // If valid, remove the OTP to prevent reuse
+        if (isValid) {
+            otpMap.remove(key);
+        }
+        
+        return isValid;
+    }
 }
 

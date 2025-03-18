@@ -34,6 +34,15 @@ public class EmailService {
     @Value("${app.base-url:http://localhost:3000}") // Update frontend URL
     private String baseUrl;
 
+    
+    /**
+     * Send HTML email for substitute request
+     */
+  
+    
+   
+    
+    // Rest of the methods remain unchanged
     public boolean sendHtmlLeaveRequestEmail(String to, String from, String subject, String body, 
                                             Long leaveId, Long approverId, String senderName, 
                                             String approverName, String fromDate, String toDate) {
@@ -150,5 +159,237 @@ public class EmailService {
         }
         
         mailSender.send(message);
+    }
+
+    /**
+     * Send HTML email for substitute request
+     */
+    public boolean sendHtmlSubstituteRequestEmail(String to, String from, String subject, String body, 
+                                                Long requestId, Long substituteId, String senderName, 
+                                                String substituteName, String requestDate, String periodInfo,
+                                                String approveToken, String rejectToken) {
+        try {
+            System.out.println("DEBUG: EmailService.sendHtmlSubstituteRequestEmail called");
+            System.out.println("DEBUG: Mail enabled: " + mailEnabled);
+            System.out.println("DEBUG: To: " + to + ", From: " + from + ", Subject: " + subject);
+            System.out.println("DEBUG: Request ID: " + requestId + ", Substitute ID: " + substituteId);
+            System.out.println("DEBUG: Approve Token: " + approveToken + ", Reject Token: " + rejectToken);
+            
+            if (!mailEnabled) {
+                System.out.println("DEBUG: Email sending is disabled.");
+                logger.warn("Email sending is disabled.");
+                return false;
+            }
+            
+            // Validate input parameters
+            if (to == null || to.isEmpty()) {
+                System.out.println("DEBUG: Recipient email is null or empty");
+                logger.error("Recipient email is null or empty");
+                return false;
+            }
+            
+            if (approveToken == null || rejectToken == null) {
+                System.out.println("DEBUG: Approval or rejection token is null");
+                logger.error("Approval or rejection token is null");
+                return false;
+            }
+            
+            // Log detailed information for debugging
+            logger.info("Attempting to send substitute request email to: {}", to);
+            logger.info("From: {}, Subject: {}", from, subject);
+            logger.info("Request ID: {}, Substitute ID: {}", requestId, substituteId);
+            logger.info("Approve Token: {}, Reject Token: {}", approveToken, rejectToken);
+            
+            // Frontend URLs for approval/rejection
+            String approveUrl = baseUrl + "/email-action?token=" + approveToken + "&action=approve-substitute";
+            String rejectUrl = baseUrl + "/email-action?token=" + rejectToken + "&action=reject-substitute";
+            
+            System.out.println("DEBUG: Approve URL: " + approveUrl);
+            System.out.println("DEBUG: Reject URL: " + rejectUrl);
+            logger.info("Approve URL: {}", approveUrl);
+            logger.info("Reject URL: {}", approveUrl);
+            
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            
+            helper.setTo(to);
+            
+            // Ensure defaultFromEmail is not empty
+            if (defaultFromEmail == null || defaultFromEmail.isEmpty()) {
+                defaultFromEmail = "noreply@example.com";
+                System.out.println("DEBUG: Default from email is empty, using fallback: " + defaultFromEmail);
+                logger.warn("Default from email is empty, using fallback: {}", defaultFromEmail);
+            }
+            
+            helper.setFrom(defaultFromEmail);
+            if (from != null && !from.isEmpty()) {
+                helper.setReplyTo(from);
+            }
+            helper.setSubject(subject);
+            
+            String htmlBody = "<p>Dear " + substituteName + ",</p>"
+                    + "<p>A substitute request has been submitted by " + senderName + " with the following details:</p>"
+                    + "<p><strong>Subject:</strong> " + subject + "</p>"
+                    + "<p><strong>Details:</strong> " + body.replace("\n", "<br/>") + "</p>"
+                    + "<p><strong>Date:</strong> " + requestDate + "</p>"
+                    + "<p><strong>Time:</strong> " + periodInfo + "</p>"
+                    + "<p>Can you substitute for this class?</p>"
+                    + "<p><a href='" + approveUrl + "' style='padding: 10px; background: green; color: white; text-decoration: none;'>Accept</a>"
+                    + " &nbsp; "
+                    + "<a href='" + rejectUrl + "' style='padding: 10px; background: red; color: white; text-decoration: none;'>Decline</a></p>"
+                    + "<p>Thank you.</p>"
+                    + "<p>With Regards,</p>"
+                    + "<p>CMS.</p>";
+            
+            helper.setText(htmlBody, true);
+            
+            // Log before sending
+            System.out.println("DEBUG: About to send email to: " + to);
+            logger.info("About to send email to: {}", to);
+            
+            try {
+                mailSender.send(message);
+                System.out.println("DEBUG: Substitute request email sent successfully to: " + to);
+                logger.info("Substitute request email sent successfully to: {}", to);
+                return true;
+            } catch (MailException e) {
+                System.out.println("DEBUG: MailException while sending email: " + e.getMessage());
+                e.printStackTrace();
+                logger.error("MailException while sending email: {}", e.getMessage(), e);
+                return false;
+            }
+        } catch (MailException e) {
+            System.out.println("DEBUG: MailException while preparing email: " + e.getMessage());
+            e.printStackTrace();
+            logger.error("MailException while preparing email: {}", e.getMessage(), e);
+            return false;
+        } catch (MessagingException e) {
+            System.out.println("DEBUG: MessagingException while preparing email: " + e.getMessage());
+            e.printStackTrace();
+            logger.error("MessagingException while preparing email: {}", e.getMessage(), e);
+            return false;
+        } catch (Exception e) {
+            System.out.println("DEBUG: Unexpected exception while sending email: " + e.getMessage());
+            e.printStackTrace();
+            logger.error("Unexpected exception while sending email: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+    
+    /**
+     * Send email for substitute request status update
+     */
+    public boolean sendSubstituteStatusUpdateEmail(String to, String from, String subject, String statusInfo, 
+                                                 String substituteName, String requesterName, 
+                                                 String requestDate, String periodInfo) {
+        try {
+            System.out.println("DEBUG: EmailService.sendSubstituteStatusUpdateEmail called");
+            System.out.println("DEBUG: Mail enabled: " + mailEnabled);
+            System.out.println("DEBUG: To: " + to + ", From: " + from + ", Subject: " + subject);
+            
+            if (!mailEnabled) {
+                System.out.println("DEBUG: Email sending is disabled.");
+                logger.warn("Email sending is disabled.");
+                return false;
+            }
+            
+            // Log detailed information for debugging
+            logger.info("Attempting to send substitute status update email to: {}", to);
+            logger.info("From: {}, Subject: {}", from, subject);
+            
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            
+            helper.setTo(to);
+            
+            // Ensure defaultFromEmail is not empty
+            if (defaultFromEmail == null || defaultFromEmail.isEmpty()) {
+                defaultFromEmail = "noreply@example.com";
+                System.out.println("DEBUG: Default from email is empty, using fallback: " + defaultFromEmail);
+                logger.warn("Default from email is empty, using fallback: {}", defaultFromEmail);
+            }
+            
+            helper.setFrom(defaultFromEmail);
+            if (from != null && !from.isEmpty()) {
+                helper.setReplyTo(from);
+            }
+            helper.setSubject(subject);
+            
+            String htmlBody = "<p>Dear " + requesterName + ",</p>"
+                    + "<p>Your substitute request for the class on <strong>" + requestDate + "</strong> at <strong>" + periodInfo + "</strong> has been updated:</p>"
+                    + "<p><strong>Status:</strong> " + statusInfo + "</p>"
+                    + "<p>Response from: " + substituteName + "</p>"
+                    + "<p>Thank you.</p>"
+                    + "<p>With Regards,</p>"
+                    + "<p>CMS.</p>";
+            
+            helper.setText(htmlBody, true);
+            
+            // Log before sending
+            System.out.println("DEBUG: About to send status update email to: " + to);
+            logger.info("About to send status update email to: {}", to);
+            
+            try {
+                mailSender.send(message);
+                System.out.println("DEBUG: Substitute status update email sent successfully to: " + to);
+                logger.info("Substitute status update email sent successfully to: {}", to);
+                return true;
+            } catch (MailException e) {
+                System.out.println("DEBUG: MailException while sending status update email: " + e.getMessage());
+                e.printStackTrace();
+                logger.error("MailException while sending status update email: {}", e.getMessage(), e);
+                return false;
+            }
+        } catch (MailException e) {
+            System.out.println("DEBUG: MailException while preparing status update email: " + e.getMessage());
+            e.printStackTrace();
+            logger.error("MailException while preparing status update email: {}", e.getMessage(), e);
+            return false;
+        } catch (MessagingException e) {
+            System.out.println("DEBUG: MessagingException while preparing status update email: " + e.getMessage());
+            e.printStackTrace();
+            logger.error("MessagingException while preparing email: {}", e.getMessage(), e);
+            return false;
+        } catch (Exception e) {
+            System.out.println("DEBUG: Unexpected exception while sending status update email: " + e.getMessage());
+            e.printStackTrace();
+            logger.error("Failed to send substitute status update email to: {}. Error: {}", to, e.getMessage(), e);
+            return false;
+        }
+    }
+    /**
+     * Send HTML OTP email for password reset
+     */
+    public boolean sendHtmlOtpEmail(String to, String subject, String otp, String userName) {
+        try {
+            if (!mailEnabled) {
+                logger.warn("Email sending is disabled.");
+                return false;
+            }
+            
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            
+            helper.setTo(to);
+            helper.setFrom(defaultFromEmail);
+            helper.setSubject(subject);
+            
+            String htmlBody = "<p>Dear " + userName + ",</p>"
+                    + "<p>You have requested to reset your password for the College Management System.</p>"
+                    + "<p>Your One-Time Password (OTP) for password reset is: <strong>" + otp + "</strong></p>"
+                    + "<p>This OTP will expire in 10 minutes.</p>"
+                    + "<p>If you did not request this password reset, please ignore this email or contact the system administrator.</p>"
+                    + "<p>Thank you.</p>"
+                    + "<p>With Regards,</p>"
+                    + "<p>College Management System</p>";
+            
+            helper.setText(htmlBody, true);
+            mailSender.send(message);
+            logger.info("OTP email sent successfully to: {}", to);
+            return true;
+        } catch (MailException | MessagingException e) {
+            logger.error("Failed to send OTP email to: {}. Error: {}", to, e.getMessage(), e);
+            return false;
+        }
     }
 }

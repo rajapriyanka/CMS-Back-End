@@ -1,7 +1,13 @@
 package com.cms.service;
 
 import com.cms.entities.Course;
+import com.cms.repository.AttendanceRepository;
 import com.cms.repository.CourseRepository;
+import com.cms.repository.FacultyCourseRepository;
+import com.cms.repository.TimetableEntryRepository;
+
+import jakarta.transaction.Transactional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,9 +19,17 @@ import java.util.List;
 @Service
 public class CourseService {
 
-    @Autowired
+	@Autowired
     private CourseRepository courseRepository;
-    
+
+    @Autowired
+    private FacultyCourseRepository facultyCourseRepository;
+
+    @Autowired
+    private TimetableEntryRepository timetableEntryRepository;
+
+    @Autowired
+    private AttendanceRepository attendanceRepository;
     @Autowired
     private ExcelService excelService;
 
@@ -50,10 +64,13 @@ public class CourseService {
         return courseRepository.save(existingCourse);
     }
 
-    public void deleteCourse(Long id) {
-        courseRepository.deleteById(id);
+    @Transactional
+    public void deleteCourse(Long courseId) {
+    	facultyCourseRepository.deleteByCourseId(courseId);
+        attendanceRepository.deleteByCourseId(courseId);
+        timetableEntryRepository.deleteByCourseId(courseId);
+        courseRepository.deleteById(courseId);
     }
-
     public List<Course> getAllCourses() {
         return courseRepository.findAll();
     }

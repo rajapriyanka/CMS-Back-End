@@ -1,5 +1,6 @@
 package com.cms.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 
 @Entity
@@ -9,31 +10,18 @@ public class Student {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", referencedColumnName = "id")
+    @JsonIgnoreProperties(value = {"password", "faculty", "hibernateLazyInitializer", "handler"}, allowSetters = true)
     private User user;
-    
-    private String name;
 
+    private String name;
     private String dno;
     private String department;
     private String batchName;
-    
-  
-    
+
     @Column(name = "mobile_number")
     private String mobileNumber;
-
-
-    // other fields, getters, setters, etc.
-
-    public String getMobileNumber() {
-        return mobileNumber;
-    }
-
-    public void setMobileNumber(String mobileNumber) {
-        this.mobileNumber = mobileNumber;
-    }
 
     // Getters and setters
     public Long getId() {
@@ -76,12 +64,24 @@ public class Student {
         this.batchName = batchName;
     }
 
-	public String getName() {
-		return name;
-	}
+    public String getMobileNumber() {
+        return mobileNumber;
+    }
 
-	public void setName(String name) {
-		this.name = name;
-	}
+    public void setMobileNumber(String mobileNumber) {
+        this.mobileNumber = mobileNumber;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+    
+    // Helper method to get email directly from the student object
+    public String getEmail() {
+        return user != null ? user.getEmail() : null;
+    }
 }
-

@@ -2,6 +2,9 @@ package com.cms.repository;
 
 import com.cms.entities.Faculty;
 import com.cms.entities.TimetableEntry;
+
+import jakarta.transaction.Transactional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -35,9 +38,27 @@ public interface TimetableEntryRepository extends JpaRepository<TimetableEntry, 
     @Query("SELECT COUNT(te) FROM TimetableEntry te JOIN te.timeSlot ts WHERE te.faculty.id = :facultyId AND ts.periodNumber = 8 AND ts.isBreak = false")
     Long countLastPeriodsByFacultyId(@Param("facultyId") Long facultyId);
     
-    // Update to return the count of deleted entries
+  
     @Modifying
+    @Transactional
     @Query("DELETE FROM TimetableEntry te WHERE te.faculty.id = :facultyId")
     int deleteByFacultyId(@Param("facultyId") Long facultyId);
-}
+    
+    // Delete timetable entries based on course ID
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM TimetableEntry te WHERE te.course.id = :courseId")
+    int deleteByCourseId(@Param("courseId") Long courseId);
+    
+    // Delete timetable entries based on batch ID
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM TimetableEntry te WHERE te.batch.id = :batchId")
+    int deleteByBatchId(@Param("batchId") Long batchId);
 
+    // Delete timetable entries based on faculty and course
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM TimetableEntry te WHERE te.faculty.id = :facultyId AND te.course.id = :courseId AND te.batch.id = :batchId")
+    int deleteByFacultyIdAndCourseIdAndBatchId(@Param("facultyId") Long facultyId, @Param("courseId") Long courseId, @Param("batchId") Long batchId);
+}

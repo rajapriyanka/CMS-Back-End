@@ -8,6 +8,10 @@ import com.cms.entities.User;
 import com.cms.enums.UserRole;
 import com.cms.repository.FacultyRepository;
 import com.cms.repository.LeaveRepository;
+import com.cms.repository.LeaveRequestRepository;
+import com.cms.repository.StudentLeaveRepository;
+import com.cms.repository.SubstituteRequestRepository;
+import com.cms.repository.AttendanceRepository;
 import com.cms.repository.FacultyCourseRepository;
 import com.cms.repository.TimetableEntryRepository;
 import com.cms.repository.UserRepository;
@@ -25,6 +29,16 @@ public class FacultyService {
 
     @Autowired
     private FacultyRepository facultyRepository;
+    
+    @Autowired
+    private StudentLeaveRepository studentLeaveRepository;
+    
+    @Autowired
+    private AttendanceRepository attendanceRepository;
+
+    
+    @Autowired
+    private SubstituteRequestRepository substituteRequestRepository;
 
     @Autowired
     private UserRepository userRepository;
@@ -40,6 +54,10 @@ public class FacultyService {
     
     @Autowired 
     private LeaveRepository leaveRepository;
+    
+    @Autowired 
+    private LeaveRequestRepository leaveRequestRepository;
+    
     
     
 
@@ -93,7 +111,6 @@ public class FacultyService {
         return facultyRepository.save(faculty);
     }
 
-
     @Transactional
     public void deleteFacultyByUserId(Long userId) {
         User user = userRepository.findById(userId)
@@ -102,16 +119,27 @@ public class FacultyService {
         Faculty faculty = facultyRepository.findByUser(user)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Faculty not found for the given User ID"));
 
-        // Delete associated leave requests before deleting faculty
-        leaveRepository.deleteByFaculty(faculty);
+        // Step 1: Remove faculty as an approver (prevents foreign key constraint violation)
+        leaveRepository.removeFacultyAsApprover(faculty.getId());
 
-        // Delete related timetable entries first
+        // Step 2: Delete all leave records associated with the faculty
+        leaveRepository.deleteByFaculty(faculty);
+        leaveRequestRepository.deleteByFaculty(faculty);
+        studentLeaveRepository.deleteByFaculty(faculty);
+
+        // Step 3: Delete substitute requests where faculty is either requester or substitute
+        substituteRequestRepository.deleteByRequesterOrSubstitute(faculty, faculty);
+
+        // Step 4: Delete attendance records for the faculty (NEW STEP)
+        attendanceRepository.deleteByFacultyId(faculty.getId());
+
+        // Step 5: Delete related timetable entries
         timetableEntryRepository.deleteByFaculty(faculty);
 
-        // Delete faculty record
+        // Step 6: Delete faculty record
         facultyRepository.delete(faculty);
 
-        // Delete associated user record
+        // Step 7: Delete associated user record
         userRepository.delete(user);
     }
 

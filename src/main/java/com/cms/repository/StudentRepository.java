@@ -3,7 +3,9 @@ package com.cms.repository;
 import com.cms.entities.Student;
 import com.cms.entities.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -22,4 +24,9 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
 
     Optional<Student> findByUser(User user);
     List<Student> findByBatchName(String batchName);
+    
+    @Modifying
+    @Query("DELETE FROM Student s WHERE s.batchName = :batchName")
+    void deleteByBatchName(@Param("batchName") String batchName);
+
 }

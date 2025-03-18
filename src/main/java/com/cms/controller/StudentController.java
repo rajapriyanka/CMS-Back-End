@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/students")
@@ -24,14 +27,50 @@ public class StudentController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
-    public ResponseEntity<List<Student>> getAllStudents() {
-        return ResponseEntity.ok(studentService.getAllStudents());
+    public ResponseEntity<List<Map<String, Object>>> getAllStudents() {
+        List<Student> students = studentService.getAllStudents();
+        
+        // Transform to simplified objects to avoid recursion and ensure email is included
+        List<Map<String, Object>> result = students.stream()
+            .map(student -> {
+                Map<String, Object> map = new HashMap<>();
+                map.put("id", student.getId());
+                map.put("name", student.getName());
+                // Include email directly in the student object for frontend compatibility
+                map.put("email", student.getUser() != null ? student.getUser().getEmail() : null);
+                map.put("dno", student.getDno());
+                map.put("department", student.getDepartment());
+                map.put("batchName", student.getBatchName());
+                map.put("mobileNumber", student.getMobileNumber());
+                return map;
+            })
+            .collect(Collectors.toList());
+            
+        return ResponseEntity.ok(result);
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/search")
-    public ResponseEntity<List<Student>> searchStudentsByName(@RequestParam String name) {
-        return ResponseEntity.ok(studentService.searchStudentsByName(name));
+    public ResponseEntity<List<Map<String, Object>>> searchStudentsByName(@RequestParam String name) {
+        List<Student> students = studentService.searchStudentsByName(name);
+        
+        // Transform to simplified objects and ensure email is included
+        List<Map<String, Object>> result = students.stream()
+            .map(student -> {
+                Map<String, Object> map = new HashMap<>();
+                map.put("id", student.getId());
+                map.put("name", student.getName());
+                // Include email directly in the student object
+                map.put("email", student.getUser() != null ? student.getUser().getEmail() : null);
+                map.put("dno", student.getDno());
+                map.put("department", student.getDepartment());
+                map.put("batchName", student.getBatchName());
+                map.put("mobileNumber", student.getMobileNumber());
+                return map;
+            })
+            .collect(Collectors.toList());
+            
+        return ResponseEntity.ok(result);
     }
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -48,9 +87,17 @@ public class StudentController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteStudent(@PathVariable Long id) {
-        studentService.deleteStudent(id);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<Map<String, String>> deleteStudent(@PathVariable Long id) {
+        try {
+            studentService.deleteStudent(id);
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Student deleted successfully");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, String> response = new HashMap<>();
+            response.put("error", "Failed to delete student: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
     }
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -71,13 +118,29 @@ public class StudentController {
                     .body("Error uploading students: " + e.getMessage());
         }
     }
-    @GetMapping("/students/filter")
-    public ResponseEntity<List<Student>> filterStudents(
+    
+    @GetMapping("/filter")
+    public ResponseEntity<List<Map<String, Object>>> filterStudents(
             @RequestParam(required = false) String department,
             @RequestParam(required = false) String batchName) {
         List<Student> filteredStudents = studentService.getFilteredStudents(department, batchName);
-        return ResponseEntity.ok(filteredStudents);
+        
+        // Transform to simplified objects and ensure email is included
+        List<Map<String, Object>> result = filteredStudents.stream()
+            .map(student -> {
+                Map<String, Object> map = new HashMap<>();
+                map.put("id", student.getId());
+                map.put("name", student.getName());
+                // Include email directly in the student object
+                map.put("email", student.getUser() != null ? student.getUser().getEmail() : null);
+                map.put("dno", student.getDno());
+                map.put("department", student.getDepartment());
+                map.put("batchName", student.getBatchName());
+                map.put("mobileNumber", student.getMobileNumber());
+                return map;
+            })
+            .collect(Collectors.toList());
+            
+        return ResponseEntity.ok(result);
     }
-
 }
-

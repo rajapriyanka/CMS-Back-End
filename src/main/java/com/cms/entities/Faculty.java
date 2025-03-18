@@ -89,6 +89,7 @@ public class Faculty {
     @JsonManagedReference
     private User user;
 
+
     // Getters and setters
     // ...
 }

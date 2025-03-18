@@ -21,5 +21,17 @@ public interface FacultyCourseRepository extends JpaRepository<FacultyCourse, Lo
     int deleteByFacultyId(@Param("facultyId") Long facultyId);
 
 	Optional<FacultyCourse> findByFacultyIdAndCourseId(Long facultyId, Long courseId);
+	
+	@Modifying
+	@Query("DELETE FROM FacultyCourse fc WHERE fc.course.id = :courseId")
+	void deleteByCourseId(@Param("courseId") Long courseId);
+	
+	@Modifying
+	@Query("DELETE FROM FacultyCourse fc WHERE fc.batch.id = :batchId")
+	void deleteByBatchId(@Param("batchId") Long batchId);
+	@Query("SELECT COUNT(fc) FROM FacultyCourse fc WHERE fc.faculty.id = :facultyId AND fc.course.id = :courseId AND fc.batch.id = :batchId")
+	long countByFacultyCourseBatch(@Param("facultyId") Long facultyId, @Param("courseId") Long courseId, @Param("batchId") Long batchId);
+
+
 }
 
