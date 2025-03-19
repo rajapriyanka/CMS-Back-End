@@ -39,6 +39,7 @@ public interface TimetableEntryRepository extends JpaRepository<TimetableEntry, 
     Long countLastPeriodsByFacultyId(@Param("facultyId") Long facultyId);
     
   
+    List<TimetableEntry> findByFacultyIdAndBatchId(Long facultyId, Long batchId);
     @Modifying
     @Transactional
     @Query("DELETE FROM TimetableEntry te WHERE te.faculty.id = :facultyId")

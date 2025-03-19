@@ -31,18 +31,10 @@ public class EmailService {
     @Value("${spring.mail.username:}")
     private String defaultFromEmail;
     
-    @Value("${app.base-url:http://localhost:3000}") // Update frontend URL
+    @Value("${app.base-url:http://localhost:3000}") 
     private String baseUrl;
 
     
-    /**
-     * Send HTML email for substitute request
-     */
-  
-    
-   
-    
-    // Rest of the methods remain unchanged
     public boolean sendHtmlLeaveRequestEmail(String to, String from, String subject, String body, 
                                             Long leaveId, Long approverId, String senderName, 
                                             String approverName, String fromDate, String toDate) {
@@ -57,8 +49,8 @@ public class EmailService {
             String rejectToken = emailTokenService.generateToken(leaveId, approverId, Leave.LeaveStatus.REJECTED);
             
             // Frontend URLs for approval/rejection
-            String approveUrl = baseUrl + "/email-action?token=" + approveToken + "&action=approve";
-            String rejectUrl = baseUrl + "/email-action?token=" + rejectToken + "&action=reject";
+            String approveUrl = baseUrl ;
+            String rejectUrl = baseUrl;
             
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -100,10 +92,8 @@ public class EmailService {
                 logger.warn("Email sending is disabled.");
                 return false;
             }
-            
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            
             helper.setTo(to);
             helper.setFrom(defaultFromEmail);
             if (from != null && !from.isEmpty()) {
@@ -201,8 +191,8 @@ public class EmailService {
             logger.info("Approve Token: {}, Reject Token: {}", approveToken, rejectToken);
             
             // Frontend URLs for approval/rejection
-            String approveUrl = baseUrl + "/email-action?token=" + approveToken + "&action=approve-substitute";
-            String rejectUrl = baseUrl + "/email-action?token=" + rejectToken + "&action=reject-substitute";
+            String approveUrl = baseUrl ;
+            String rejectUrl = baseUrl ;
             
             System.out.println("DEBUG: Approve URL: " + approveUrl);
             System.out.println("DEBUG: Reject URL: " + rejectUrl);

@@ -1,10 +1,11 @@
 package com.cms.dto;
 
+import java.sql.Date;
 import java.time.LocalDate;
 
 public class FacultyFilterDTO {
     private Long requestingFacultyId;
-    private LocalDate requestDate;
+    private Date requestDate;
     private Integer periodNumber;
     private Long batchId;
     private boolean filterByAvailability;
@@ -19,11 +20,11 @@ public class FacultyFilterDTO {
         this.requestingFacultyId = requestingFacultyId;
     }
     
-    public LocalDate getRequestDate() {
+    public Date getRequestDate() {
         return requestDate;
     }
     
-    public void setRequestDate(LocalDate requestDate) {
+    public void setRequestDate(Date requestDate) {
         this.requestDate = requestDate;
     }
     

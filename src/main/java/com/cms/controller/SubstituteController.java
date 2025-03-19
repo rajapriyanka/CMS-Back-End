@@ -23,9 +23,6 @@ public class SubstituteController {
     @Autowired
     private SubstituteRequestService substituteRequestService;
     
-    /**
-     * Filter faculty based on availability and batch handling
-     */
     @PostMapping("/filter-faculty")
     public ResponseEntity<List<FacultyAvailabilityDTO>> filterFaculty(@RequestBody FacultyFilterDTO filterDTO) {
         List<FacultyAvailabilityDTO> availableFaculty = 
