@@ -39,9 +39,9 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Object> handleRuntimeException(RuntimeException ex, WebRequest request) {
         logger.error("Runtime exception: {}", ex.getMessage());
         Map<String, String> response = new HashMap<>();
-        response.put("error", "Bad Request");
+        response.put("error", "Internal Server Error");
         response.put("message", ex.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @ExceptionHandler(Exception.class)
@@ -51,5 +51,10 @@ public class GlobalExceptionHandler {
         response.put("error", "Internal Server Error");
         response.put("message", "An unexpected error occurred. Please try again later.");
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(DuplicateCourseException.class)
+    public ResponseEntity<String> handleDuplicateCourseException(DuplicateCourseException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
     }
 }

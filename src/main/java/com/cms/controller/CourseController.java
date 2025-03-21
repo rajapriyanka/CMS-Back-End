@@ -1,8 +1,10 @@
 package com.cms.controller;
 
 import com.cms.entities.Course;
+import com.cms.exception.DuplicateCourseException;
 import com.cms.service.CourseService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -20,14 +22,24 @@ public class CourseController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<Course> registerCourse(@RequestBody Course course) {
-        return ResponseEntity.ok(courseService.registerCourse(course));
+    public ResponseEntity<?> registerCourse(@RequestBody Course course) {
+        try {
+            return ResponseEntity.ok(courseService.registerCourse(course));
+        } catch (DuplicateCourseException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        }
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
-    public ResponseEntity<Course> updateCourse(@PathVariable Long id, @RequestBody Course course) {
-        return ResponseEntity.ok(courseService.updateCourse(id, course));
+    public ResponseEntity<?> updateCourse(@PathVariable Long id, @RequestBody Course course) {
+        try {
+            return ResponseEntity.ok(courseService.updateCourse(id, course));
+        } catch (DuplicateCourseException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
     }
 
     @PreAuthorize("hasRole('ADMIN')")

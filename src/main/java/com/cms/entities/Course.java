@@ -13,9 +13,13 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 @Entity
-@Table(name = "courses")
+@Table(name = "courses", 
+       uniqueConstraints = {
+           @UniqueConstraint(columnNames = {"code", "type"})
+       })
 public class Course {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,7 +28,7 @@ public class Course {
     @Column(nullable = false)
     private String title;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String code;
    
     @Column(nullable = false)
@@ -39,6 +43,7 @@ public class Course {
 
     @Column(nullable = false)
     private String department;
+    
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<FacultyCourse> facultyCourses = new HashSet<>();
 
@@ -116,4 +121,3 @@ public class Course {
         LAB
     }
 }
-

@@ -80,6 +80,10 @@ public class AdminPasswordService {
 
         // Update email
         user.setEmail(newEmail);
+        
+        // Increment credential version to invalidate existing tokens
+        user.incrementCredentialVersion();
+        
         userRepository.save(user);
 
         // Send email change confirmation email to both old and new addresses
@@ -229,6 +233,10 @@ public class AdminPasswordService {
         
         // Update password
         user.setPassword(passwordEncoder.encode(newPassword));
+        
+        // Increment credential version to invalidate existing tokens
+        user.incrementCredentialVersion();
+        
         userRepository.save(user);
         
         // Clear OTP
@@ -378,6 +386,10 @@ public class AdminPasswordService {
         
         // Update password
         targetUser.setPassword(passwordEncoder.encode(newPassword));
+        
+        // Increment credential version to invalidate existing tokens
+        targetUser.incrementCredentialVersion();
+        
         userRepository.save(targetUser);
         
         // Send notification emails

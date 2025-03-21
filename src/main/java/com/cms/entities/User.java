@@ -18,6 +18,9 @@ public class User {
    
     private String password;
     
+    // Add credential version field to track changes
+    private Long credentialVersion = 0L;
+    
     @OneToOne(mappedBy = "user", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
     @JsonBackReference("student-user")
     private Student student;
@@ -84,5 +87,19 @@ public class User {
     
     public void setStudent(Student student) {
         this.student = student;
+    }
+    
+    // Getters and setters for credentialVersion
+    public Long getCredentialVersion() {
+        return credentialVersion;
+    }
+
+    public void setCredentialVersion(Long credentialVersion) {
+        this.credentialVersion = credentialVersion;
+    }
+    
+    // Method to increment credential version
+    public void incrementCredentialVersion() {
+        this.credentialVersion = (this.credentialVersion == null ? 0 : this.credentialVersion) + 1;
     }
 }

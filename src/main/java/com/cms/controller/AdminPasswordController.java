@@ -15,39 +15,17 @@ import java.util.Map;
 @RequestMapping("/api/admin/password")
 public class AdminPasswordController {
 
-	  private final AdminPasswordService adminPasswordService;
+    private final AdminPasswordService adminPasswordService;
 
-	    public AdminPasswordController(AdminPasswordService adminPasswordService) {
-	        this.adminPasswordService = adminPasswordService;
-	    }
+    public AdminPasswordController(AdminPasswordService adminPasswordService) {
+        this.adminPasswordService = adminPasswordService;
+    }
 
-	    @PostMapping("/change-email")
-	    public ResponseEntity<?> changeEmail(@RequestBody UsernameChangeRequest request) {
-	        adminPasswordService.changeEmail(request.getEmail(), request.getNewUsername());
-	        return ResponseEntity.ok(Map.of("message", "Email has been updated successfully"));
-	    }
-
-	    // Inner class for request body
-	    static class UsernameChangeRequest {
-	        private String email;
-	        private String newUsername;
-
-	        public String getEmail() {
-	            return email;
-	        }
-
-	        public void setEmail(String email) {
-	            this.email = email;
-	        }
-
-	        public String getNewUsername() {
-	            return newUsername;
-	        }
-
-	        public void setNewUsername(String newUsername) {
-	            this.newUsername = newUsername;
-	        }
-	    }
+    @PostMapping("/change-email")
+    public ResponseEntity<?> changeEmail(@RequestBody UsernameChangeRequest request) {
+        adminPasswordService.changeEmail(request.getEmail(), request.getNewEmail());
+        return ResponseEntity.ok(Map.of("message", "Email has been updated successfully"));
+    }
 
     /**
      * Request OTP for password reset

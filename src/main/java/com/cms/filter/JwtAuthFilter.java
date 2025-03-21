@@ -63,6 +63,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
 
+            // Validate token including credential version check
             if (jwtUtil.validateToken(jwt, userDetails)) {
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                         userDetails, null, userDetails.getAuthorities());
@@ -71,13 +72,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 logger.info("Authentication successful for user: {}", username);
             } else {
                 logger.warn("Invalid JWT token for user: {}", username);
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid JWT token.");
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid JWT token or credentials have changed.");
                 return;
             }
         }
 
         chain.doFilter(request, response);
     }
+    
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
@@ -87,6 +89,4 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                path.equals("/api/student/login") || 
                path.equals("/api/faculty/login");
     }
-
-
 }
