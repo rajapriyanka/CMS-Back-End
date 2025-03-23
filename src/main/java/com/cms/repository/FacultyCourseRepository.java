@@ -33,5 +33,12 @@ public interface FacultyCourseRepository extends JpaRepository<FacultyCourse, Lo
 	long countByFacultyCourseBatch(@Param("facultyId") Long facultyId, @Param("courseId") Long courseId, @Param("batchId") Long batchId);
 
 
+	// Add this new method to check if any other faculty has the same course-batch pair
+    @Query("SELECT COUNT(fc) FROM FacultyCourse fc WHERE fc.course.id = :courseId AND fc.batch.id = :batchId AND fc.faculty.id != :facultyId")
+    long countByCourseBatchWithDifferentFaculty(@Param("courseId") Long courseId, @Param("batchId") Long batchId, @Param("facultyId") Long facultyId);
+
+    // Add this method to find which faculty has the course-batch pair
+    @Query("SELECT fc.faculty.name FROM FacultyCourse fc WHERE fc.course.id = :courseId AND fc.batch.id = :batchId")
+    List<String> findFacultyNamesByCourseBatch(@Param("courseId") Long courseId, @Param("batchId") Long batchId);
 }
 

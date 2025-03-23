@@ -46,6 +46,7 @@ public class FacultyCourseService {
         return batchRepository.findAll();
     }
 
+
     /**
      * Adds a course to a batch for a faculty, checking for duplicates
      * @return A message indicating the result of the operation
@@ -68,7 +69,16 @@ public class FacultyCourseService {
         if (existingEntry.isPresent()) {
             // Entry already exists, return a message
             return "Course '" + course.getTitle() + "' is already assigned to this faculty for batch " + 
-                   batch.getBatchName() + " " + batch.getSection();
+               batch.getBatchName() + " " + batch.getSection();
+        } 
+        
+        // Check if any other faculty has the same course-batch pair
+        long otherFacultyCount = facultyCourseRepository.countByCourseBatchWithDifferentFaculty(courseId, batchId, facultyId);
+        if (otherFacultyCount > 0) {
+            List<String> facultyNames = facultyCourseRepository.findFacultyNamesByCourseBatch(courseId, batchId);
+            String assignedFaculty = facultyNames.isEmpty() ? "another faculty" : facultyNames.get(0);
+            return "Course '" + course.getTitle() + "' for batch " + batch.getBatchName() + " " + batch.getSection() + 
+               " is already assigned to " + assignedFaculty + ". A course-batch pair can only be assigned to one faculty.";
         } else {
             // Create a new faculty-course entry
             FacultyCourse facultyCourse = new FacultyCourse();
@@ -76,9 +86,9 @@ public class FacultyCourseService {
             facultyCourse.setCourse(course);
             facultyCourse.setBatch(batch);
             facultyCourseRepository.save(facultyCourse);
-            
+        
             return "Course '" + course.getTitle() + "' successfully assigned to faculty for batch " + 
-                   batch.getBatchName() + " " + batch.getSection();
+               batch.getBatchName() + " " + batch.getSection();
         }
     }
 
@@ -93,17 +103,26 @@ public class FacultyCourseService {
 
         // Ensure batch exists before adding
         Batch batch = batchRepository.findByBatchNameAndDepartmentAndSection(
-                dto.getBatchName(), dto.getDepartment(), dto.getSection())
+            dto.getBatchName(), dto.getDepartment(), dto.getSection())
                 .orElseThrow(() -> new RuntimeException("Batch not found. Please select an existing batch."));
 
         // Check if the faculty-course-batch entry already exists
         Optional<FacultyCourse> existingFacultyCourse = facultyCourseRepository.findByFacultyIdAndCourseIdAndBatchId(
-                facultyId, course.getId(), batch.getId());
+            facultyId, course.getId(), batch.getId());
 
         if (existingFacultyCourse.isPresent()) {
             // Entry already exists, just return the existing entry
             return existingFacultyCourse.get();
         } else {
+            // Check if any other faculty has the same course-batch pair
+            long otherFacultyCount = facultyCourseRepository.countByCourseBatchWithDifferentFaculty(
+                course.getId(), batch.getId(), facultyId);
+        
+            if (otherFacultyCount > 0) {
+                throw new RuntimeException("This course-batch pair is already assigned to another faculty. " +
+                    "A course-batch pair can only be assigned to one faculty.");
+            }
+        
             // Create a new faculty-course entry
             FacultyCourse facultyCourse = new FacultyCourse(faculty, course, batch);
             return facultyCourseRepository.save(facultyCourse);

@@ -57,4 +57,5 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleDuplicateCourseException(DuplicateCourseException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
     }
+    
 }

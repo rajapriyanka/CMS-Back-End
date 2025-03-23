@@ -120,6 +120,12 @@ public class TimetableService {
                 if (allocatedDays.contains(dayOfWeek)) {
                     continue;
                 }
+
+                // Check if batch already has 2 labs on this day
+                int existingLabsOnDay = countLabsForBatchOnDay(labCourse.getBatch(), dayOfWeek, entries);
+                if (existingLabsOnDay >= 2) {
+                    continue; // Skip this day if batch already has 2 labs
+                }
                 
                 List<TimeSlot> daySlots = allTimeSlots.stream()
                     .filter(ts -> ts.getDay() == dayOfWeek && ts.getPeriodNumber() > 1) // Not in first period
@@ -165,6 +171,17 @@ public class TimetableService {
                 }
             }
         }
+    }
+
+    private int countLabsForBatchOnDay(Batch batch, DayOfWeek day, List<TimetableEntry> entries) {
+        // Count labs already allocated to this batch on this day
+        return (int) entries.stream()
+            .filter(e -> e.getBatch().getId().equals(batch.getId()) && 
+                    e.getTimeSlot().getDay() == day && 
+                    e.getCourse().getType() == Course.CourseType.LAB)
+            .map(e -> e.getCourse().getId()) // Group by course ID
+            .distinct() // Count each lab course only once
+            .count();
     }
     
     private void allocateNonAcademicCourse(Faculty faculty, FacultyCourse nonAcademicCourse, List<TimeSlot> allTimeSlots, 

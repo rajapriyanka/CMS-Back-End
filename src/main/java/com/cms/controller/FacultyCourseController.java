@@ -6,6 +6,7 @@ import com.cms.entities.Course;
 import com.cms.entities.FacultyCourse;
 import com.cms.service.FacultyCourseService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -30,17 +31,20 @@ public class FacultyCourseController {
         return ResponseEntity.ok(assignedCourses);
     }
 
-    /**
-     * Fetch all available courses.
-     */
     @PostMapping("/faculty/{facultyId}/courses/{courseId}/batches/{batchId}")
     @PreAuthorize("hasRole('FACULTY')")
-    public ResponseEntity<String> addCourseToBatch( @PathVariable Long facultyId,
+    public ResponseEntity<String> addCourseToBatch(@PathVariable Long facultyId,
             @PathVariable Long courseId, 
             @PathVariable Long batchId) {
         
-        facultyCourseService.addCourseToBatch(facultyId,courseId, batchId);
-        return ResponseEntity.ok("Course assigned to batch successfully");
+        String result = facultyCourseService.addCourseToBatch(facultyId, courseId, batchId);
+        
+        // Check if the result contains an error message about already assigned courses
+        if (result.contains("already assigned")) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(result);
+        }
+        
+        return ResponseEntity.ok(result);
     }
 
     
