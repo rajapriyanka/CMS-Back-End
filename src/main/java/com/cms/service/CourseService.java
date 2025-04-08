@@ -37,6 +37,42 @@ public class CourseService {
     @Autowired
     private ExcelService excelService;
 
+    /**
+     * Checks if a course with the same code and type already exists
+     * @param course The course to check
+     * @return true if a duplicate exists, false otherwise
+     */
+    private boolean isDuplicateCourse(Course course) {
+        if (course.getCode() == null || course.getType() == null) {
+            return false;
+        }
+        
+        return courseRepository.findByCodeAndType(course.getCode().trim(), course.getType())
+            .isPresent();
+    }
+    
+    /**
+     * Checks if updating a course would create a duplicate
+     * @param id The ID of the course being updated
+     * @param updatedCourse The updated course data
+     * @return true if update would create a duplicate, false otherwise
+     */
+    private boolean isUpdateCreatingDuplicate(Long id, Course updatedCourse, Course existingCourse) {
+        // If code or type is not changing, no duplicate can be created
+        if ((updatedCourse.getCode() == null || updatedCourse.getCode().trim().equals(existingCourse.getCode())) &&
+            (updatedCourse.getType() == null || updatedCourse.getType() == existingCourse.getType())) {
+            return false;
+        }
+        
+        // Determine the new code and type after update
+        String newCode = updatedCourse.getCode() != null ? updatedCourse.getCode().trim() : existingCourse.getCode();
+        Course.CourseType newType = updatedCourse.getType() != null ? updatedCourse.getType() : existingCourse.getType();
+        
+        // Check if another course with the same code and type exists (excluding this course)
+        Optional<Course> conflictingCourse = courseRepository.findByCodeAndType(newCode, newType);
+        return conflictingCourse.isPresent() && !conflictingCourse.get().getId().equals(id);
+    }
+
     public Course registerCourse(Course course) {
         try {
             // Trim input values
@@ -48,6 +84,14 @@ public class CourseService {
             }
             if (course.getDepartment() != null) {
                 course.setDepartment(course.getDepartment().trim());
+            }
+            
+            // Check for duplicates before attempting to save
+            if (isDuplicateCourse(course)) {
+                throw new DuplicateCourseException(
+                    "A course with the same code and type already exists. " +
+                    "Courses with the same code must have different types."
+                );
             }
             
             return courseRepository.save(course);
@@ -68,6 +112,14 @@ public class CourseService {
                 .orElseThrow(() -> new RuntimeException("Course not found"));
 
         try {
+            // Check for duplicates before attempting to update
+            if (isUpdateCreatingDuplicate(id, updatedCourse, existingCourse)) {
+                throw new DuplicateCourseException(
+                    "Another course with the same code and type already exists. " +
+                    "Courses with the same code must have different types."
+                );
+            }
+            
             // Update the course fields
             if (updatedCourse.getTitle() != null && !updatedCourse.getTitle().trim().isEmpty()) {
                 existingCourse.setTitle(updatedCourse.getTitle().trim());
@@ -120,6 +172,8 @@ public class CourseService {
     public List<Course> uploadCoursesFromExcel(MultipartFile file) throws IOException {
         List<Course> courses = excelService.extractCoursesFromExcel(file);
         List<Course> savedCourses = new ArrayList<>();
+        List<Course> updatedCourses = new ArrayList<>();
+        List<Course> skippedCourses = new ArrayList<>();
         
         for (Course course : courses) {
             // Skip courses with missing required fields
@@ -128,6 +182,7 @@ public class CourseService {
                 course.getContactPeriods() == null || course.getSemesterNo() == null ||
                 course.getDepartment() == null || course.getDepartment().isEmpty() ||
                 course.getType() == null) {
+                skippedCourses.add(course);
                 continue;
             }
             
@@ -137,19 +192,46 @@ public class CourseService {
                 course.setTitle(course.getTitle().trim());
                 course.setDepartment(course.getDepartment().trim());
                 
-                savedCourses.add(courseRepository.save(course));
+                // Check if a course with the same code and type already exists
+                Optional<Course> existingCourse = courseRepository.findByCodeAndType(
+                    course.getCode(), course.getType());
+                
+                if (existingCourse.isPresent()) {
+                    // Update the existing course
+                    Course existing = existingCourse.get();
+                    existing.setTitle(course.getTitle());
+                    existing.setContactPeriods(course.getContactPeriods());
+                    existing.setSemesterNo(course.getSemesterNo());
+                    existing.setDepartment(course.getDepartment());
+                    
+                    updatedCourses.add(courseRepository.save(existing));
+                    System.out.println("Updated existing course: " + course.getCode() + " - " + course.getTitle());
+                } else {
+                    // Save as a new course
+                    savedCourses.add(courseRepository.save(course));
+                }
             } catch (DataIntegrityViolationException e) {
                 // Log the error and continue with the next course
                 System.err.println("Skipping duplicate course: " + course.getCode() + " - " + 
                                   course.getTitle() + " - " + course.getType() + 
                                   ". Error: " + e.getMessage());
+                skippedCourses.add(course);
             } catch (Exception e) {
                 // Log the error and continue with the next course
                 System.err.println("Error saving course: " + course.getCode() + " - " + e.getMessage());
+                skippedCourses.add(course);
             }
         }
         
-        return savedCourses;
+        // Log summary
+        System.out.println("Excel upload summary: " +
+                          savedCourses.size() + " courses added, " +
+                          updatedCourses.size() + " courses updated, " +
+                          skippedCourses.size() + " courses skipped.");
+        
+        // Combine saved and updated courses for the response
+        List<Course> result = new ArrayList<>(savedCourses);
+        result.addAll(updatedCourses);
+        return result;
     }
 }
-

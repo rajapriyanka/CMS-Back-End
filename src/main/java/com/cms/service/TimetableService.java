@@ -36,6 +36,9 @@ public class TimetableService {
     @Autowired
     private TimeSlotService timeSlotService;
 
+    // Maximum number of labs allowed per batch per day
+    private static final int MAX_LABS_PER_DAY = 2;
+
     @Transactional
     public List<TimetableEntryDTO> generateTimetable(TimetableGenerationDTO dto) {
         // Initialize time slots if not already done
@@ -80,9 +83,12 @@ public class TimetableService {
         Collections.shuffle(labCourses);
         Collections.shuffle(nonAcademicCourses);
         
+        // Track lab allocations per batch per day
+        Map<Long, Map<DayOfWeek, Integer>> batchLabCountByDay = new HashMap<>();
+        
         // Allocate lab courses first (they have more constraints)
         for (FacultyCourse labCourse : labCourses) {
-            allocateLabCourse(faculty, labCourse, allTimeSlots, entries, academicYear, semester);
+            allocateLabCourse(faculty, labCourse, allTimeSlots, entries, academicYear, semester, batchLabCountByDay);
         }
         
         // Allocate non-academic courses next
@@ -99,7 +105,8 @@ public class TimetableService {
     }
     
     private void allocateLabCourse(Faculty faculty, FacultyCourse labCourse, List<TimeSlot> allTimeSlots, 
-                                  List<TimetableEntry> entries, String academicYear, String semester) {
+                                  List<TimetableEntry> entries, String academicYear, String semester,
+                                  Map<Long, Map<DayOfWeek, Integer>> batchLabCountByDay) {
         // Labs need consecutive periods and should not be in first period
         int totalPeriodsNeeded = labCourse.getCourse().getContactPeriods();
         
@@ -109,6 +116,22 @@ public class TimetableService {
         
         // Keep track of days already allocated for this lab
         Set<DayOfWeek> allocatedDays = new HashSet<>();
+        Long batchId = labCourse.getBatch().getId();
+        
+        // Initialize lab count for this batch if not already done
+        if (!batchLabCountByDay.containsKey(batchId)) {
+            batchLabCountByDay.put(batchId, new HashMap<>());
+            
+            // Pre-populate with existing lab counts from current entries
+            for (DayOfWeek day : DayOfWeek.values()) {
+                if (day != DayOfWeek.SUNDAY) {
+                    int existingCount = countLabsForBatchOnDay(labCourse.getBatch(), day, entries);
+                    if (existingCount > 0) {
+                        batchLabCountByDay.get(batchId).put(day, existingCount);
+                    }
+                }
+            }
+        }
         
         // Allocate lab periods across different days
         for (int day = 0; day < daysNeeded; day++) {
@@ -121,10 +144,10 @@ public class TimetableService {
                     continue;
                 }
 
-                // Check if batch already has 2 labs on this day
-                int existingLabsOnDay = countLabsForBatchOnDay(labCourse.getBatch(), dayOfWeek, entries);
-                if (existingLabsOnDay >= 2) {
-                    continue; // Skip this day if batch already has 2 labs
+                // Check if batch already has MAX_LABS_PER_DAY labs on this day
+                int existingLabsOnDay = batchLabCountByDay.get(batchId).getOrDefault(dayOfWeek, 0);
+                if (existingLabsOnDay >= MAX_LABS_PER_DAY) {
+                    continue; // Skip this day if batch already has maximum labs
                 }
                 
                 List<TimeSlot> daySlots = allTimeSlots.stream()
@@ -161,6 +184,10 @@ public class TimetableService {
                         
                         // Mark this day as allocated
                         allocatedDays.add(dayOfWeek);
+                        
+                        // Increment lab count for this batch on this day
+                        batchLabCountByDay.get(batchId).put(dayOfWeek, existingLabsOnDay + 1);
+                        
                         break; // Successfully allocated for this day
                     }
                 }

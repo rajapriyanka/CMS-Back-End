@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class FacultyService {
@@ -71,23 +72,52 @@ public class FacultyService {
 
     @Transactional
     public Faculty registerFaculty(FacultyRegistrationRequest request) {
-        User user = new User();
-        user.setName(request.getName());
-        user.setEmail(request.getEmail());
-        user.setPassword(passwordEncoder.encode(request.getMobileNo()));
-        user.setUserRole(UserRole.FACULTY);
+        // Check if a user with this email already exists
+        Optional<User> existingUser = userRepository.findFirstByEmail(request.getEmail());
+        
+        if (existingUser.isPresent()) {
+            // User exists, update the faculty information
+            User user = existingUser.get();
+            
+            // Find the associated faculty
+            Faculty faculty = facultyRepository.findByUser(user)
+                    .orElseThrow(() -> new RuntimeException("Faculty not found for existing user"));
+            
+            // Update faculty details
+            faculty.setName(request.getName());
+            faculty.setDepartment(request.getDepartment());
+            faculty.setDesignation(request.getDesignation());
+            faculty.setMobileNo(request.getMobileNo());
+            
+            // Update user details
+            user.setName(request.getName());
+            // Only update password if it's different
+            if (!passwordEncoder.matches(request.getMobileNo(), user.getPassword())) {
+                user.setPassword(passwordEncoder.encode(request.getMobileNo()));
+            }
+            
+            userRepository.save(user);
+            return facultyRepository.save(faculty);
+        } else {
+            // Create new user and faculty
+            User user = new User();
+            user.setName(request.getName());
+            user.setEmail(request.getEmail());
+            user.setPassword(passwordEncoder.encode(request.getMobileNo()));
+            user.setUserRole(UserRole.FACULTY);
 
-        Faculty faculty = new Faculty();
-        faculty.setName(request.getName());
-        faculty.setDepartment(request.getDepartment());
-        faculty.setDesignation(request.getDesignation());
-        faculty.setMobileNo(request.getMobileNo());
-        faculty.setUser(user);
+            Faculty faculty = new Faculty();
+            faculty.setName(request.getName());
+            faculty.setDepartment(request.getDepartment());
+            faculty.setDesignation(request.getDesignation());
+            faculty.setMobileNo(request.getMobileNo());
+            faculty.setUser(user);
 
-        user.setFaculty(faculty);
+            user.setFaculty(faculty);
 
-        userRepository.save(user);
-        return facultyRepository.save(faculty);
+            userRepository.save(user);
+            return facultyRepository.save(faculty);
+        }
     }
 
     @Transactional
@@ -178,5 +208,12 @@ public class FacultyService {
         userRepository.save(user);
         return facultyRepository.save(faculty);
     }
+    
+    /**
+     * Check if faculty exists by email and update if it does
+     */
+    @Transactional
+    public Faculty createOrUpdateFaculty(FacultyRegistrationRequest request) {
+        return registerFaculty(request); // Using the updated registerFaculty method that handles duplicates
+    }
 }
-

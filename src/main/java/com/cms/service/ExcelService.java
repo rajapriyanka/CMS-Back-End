@@ -1,11 +1,13 @@
 package com.cms.service;
 
+import com.cms.dto.FacultyRegistrationRequest;
 import com.cms.entities.Student;
 import com.cms.entities.User;
 import com.cms.entities.Faculty;
 import com.cms.entities.Course;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -17,6 +19,9 @@ import java.util.List;
 
 @Service
 public class ExcelService {
+
+    @Autowired
+    private FacultyService facultyService;
 
     public List<Student> extractStudentsFromExcel(MultipartFile file) throws IOException {
         List<Student> students = new ArrayList<>();
@@ -68,8 +73,8 @@ public class ExcelService {
         return dataFormatter.formatCellValue(cell);
     }
 
-    public List<Faculty> extractFacultyFromExcel(MultipartFile file) throws IOException {
-        List<Faculty> faculties = new ArrayList<>();
+    public List<FacultyRegistrationRequest> extractFacultyFromExcel(MultipartFile file) throws IOException {
+        List<FacultyRegistrationRequest> facultyRequests = new ArrayList<>();
 
         try (InputStream is = file.getInputStream();
              Workbook workbook = new XSSFWorkbook(is)) {
@@ -83,25 +88,23 @@ public class ExcelService {
 
             while (rows.hasNext()) {
                 Row currentRow = rows.next();
-                Faculty faculty = new Faculty();
-                User user = new User();
-
-                user.setEmail(getCellValueAsString(currentRow.getCell(0)));
-                user.setPassword(getCellValueAsString(currentRow.getCell(1))); // Extract password
-                faculty.setUser(user);
-
-                faculty.setName(getCellValueAsString(currentRow.getCell(2)));
-                faculty.setDepartment(getCellValueAsString(currentRow.getCell(3)));
-                faculty.setDesignation(getCellValueAsString(currentRow.getCell(4)));
-
-                // Ensure mobile number is treated as String, to avoid decimal/scientific notation issues
-                faculty.setMobileNo(getCellValueAsString(currentRow.getCell(5)));
-
-                faculties.add(faculty);
+                
+                String email = getCellValueAsString(currentRow.getCell(0));
+                String password = getCellValueAsString(currentRow.getCell(1));
+                String name = getCellValueAsString(currentRow.getCell(2));
+                String department = getCellValueAsString(currentRow.getCell(3));
+                String designation = getCellValueAsString(currentRow.getCell(4));
+                String mobileNo = getCellValueAsString(currentRow.getCell(5));
+                
+                FacultyRegistrationRequest request = new FacultyRegistrationRequest(
+                    name, email, password, department, designation, mobileNo
+                );
+                
+                facultyRequests.add(request);
             }
         }
 
-        return faculties;
+        return facultyRequests;
     }
     
     public List<Course> extractCoursesFromExcel(MultipartFile file) throws IOException {

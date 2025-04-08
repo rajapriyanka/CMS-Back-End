@@ -14,6 +14,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // Find a user by their role. This can return multiple users, so use List<User>.
     User findByUserRole(UserRole userRole);
+    
 
   
 	Optional<User> findFirstByEmail(String email);

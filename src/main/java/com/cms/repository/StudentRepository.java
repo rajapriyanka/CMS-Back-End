@@ -28,5 +28,7 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
     @Modifying
     @Query("DELETE FROM Student s WHERE s.batchName = :batchName")
     void deleteByBatchName(@Param("batchName") String batchName);
+    
+
 
 }

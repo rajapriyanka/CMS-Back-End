@@ -79,4 +79,3 @@ public class TimeSlotService {
         return timeSlotRepository.findAllByIsBreakFalseOrderByDayAscPeriodNumberAsc();
     }
 }
-

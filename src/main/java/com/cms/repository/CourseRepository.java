@@ -25,5 +25,9 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
 
     List<Course> findBySemesterNo(Integer semesterNo);
     
+    // Add these methods to the CourseRepository interface
+    boolean existsByCodeAndType(String code, CourseType type);
+    Optional<Course> findByCodeAndType(String code, CourseType type);
+    
 }
 

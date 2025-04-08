@@ -62,4 +62,7 @@ public interface TimetableEntryRepository extends JpaRepository<TimetableEntry, 
     @Transactional
     @Query("DELETE FROM TimetableEntry te WHERE te.faculty.id = :facultyId AND te.course.id = :courseId AND te.batch.id = :batchId")
     int deleteByFacultyIdAndCourseIdAndBatchId(@Param("facultyId") Long facultyId, @Param("courseId") Long courseId, @Param("batchId") Long batchId);
+    // Fixed query to properly join with timeSlot to access the day property
+    @Query("SELECT te FROM TimetableEntry te JOIN te.timeSlot ts WHERE te.batch.id = :batchId AND ts.day = :day")
+    List<TimetableEntry> findByBatchIdAndDay(@Param("batchId") Long batchId, @Param("day") DayOfWeek day);
 }

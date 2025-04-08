@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/api/students")
@@ -76,7 +77,7 @@ public class StudentController {
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<Student> registerStudent(@RequestBody Student student) {
-        return ResponseEntity.ok(studentService.registerStudent(student));
+        return ResponseEntity.ok(studentService.createOrUpdateStudent(student));
     }
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -107,11 +108,35 @@ public class StudentController {
             if (file.isEmpty()) {
                 return ResponseEntity.badRequest().body("Please select a file to upload");
             }
+            
             List<Student> students = excelService.extractStudentsFromExcel(file);
+            int updated = 0;
+            int created = 0;
+            List<String> errors = new ArrayList<>();
+            
             for (Student student : students) {
-                studentService.registerStudent(student);
+                try {
+                    boolean exists = studentService.studentExistsByEmail(student.getUser().getEmail());
+                    Student registeredStudent = studentService.createOrUpdateStudent(student);
+                    
+                    if (exists) {
+                        updated++;
+                    } else {
+                        created++;
+                    }
+                } catch (Exception e) {
+                    errors.add("Error processing student with email " + student.getUser().getEmail() + ": " + e.getMessage());
+                }
             }
-            return ResponseEntity.ok("Students uploaded successfully");
+            
+            StringBuilder resultMessage = new StringBuilder("Students upload completed: ");
+            resultMessage.append(created).append(" created, ").append(updated).append(" updated");
+            
+            if (!errors.isEmpty()) {
+                resultMessage.append(". Errors: ").append(String.join("; ", errors));
+            }
+            
+            return ResponseEntity.ok(resultMessage.toString());
         } catch (Exception e) {
             e.printStackTrace(); // Log the full stack trace
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

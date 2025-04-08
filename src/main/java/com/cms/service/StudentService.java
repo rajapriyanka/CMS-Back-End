@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @Service
 public class StudentService {
@@ -55,6 +56,17 @@ public class StudentService {
     }
     
     /**
+     * Check if student exists by email
+     */
+    public boolean studentExistsByEmail(String email) {
+        if (Objects.isNull(email) || email.isBlank()) {
+            return false;
+        }
+        
+        return studentRepository.findByUserEmail(email).isPresent();
+    }
+    
+    /**
      * Update student profile
      */
     @Transactional
@@ -80,11 +92,62 @@ public class StudentService {
         return studentRepository.findByNameContainingIgnoreCase(name);
     }
 
+    /**
+     * Create or update a student
+     * If a student with the given email already exists, update it
+     * Otherwise, create a new student
+     */
     @Transactional
-    public Student registerStudent(Student student) {
+    public Student createOrUpdateStudent(Student student) {
         if (student.getUser() == null || student.getUser().getEmail() == null || student.getUser().getPassword() == null) {
             throw new IllegalArgumentException("User, email, and password are required for student registration");
         }
+        
+        // Check if a student with this email already exists
+        Optional<User> existingUserOpt = userRepository.findFirstByEmail(student.getUser().getEmail());
+        
+        if (existingUserOpt.isPresent()) {
+            // User exists, update the student information
+            User existingUser = existingUserOpt.get();
+            
+            // Find the associated student
+            Optional<Student> existingStudentOpt = studentRepository.findByUserEmail(existingUser.getEmail());
+            
+            if (existingStudentOpt.isPresent()) {
+                Student existingStudent = existingStudentOpt.get();
+                
+                // Update student details
+                existingStudent.setName(student.getName());
+                existingStudent.setDno(student.getDno());
+                existingStudent.setDepartment(student.getDepartment());
+                existingStudent.setBatchName(student.getBatchName());
+                existingStudent.setMobileNumber(student.getMobileNumber());
+                
+                // Update user details
+                existingUser.setName(student.getName());
+                
+                // Only update password if it's provided and different
+                if (student.getUser().getPassword() != null && !student.getUser().getPassword().isEmpty() && 
+                    !passwordEncoder.matches(student.getUser().getPassword(), existingUser.getPassword())) {
+                    existingUser.setPassword(passwordEncoder.encode(student.getUser().getPassword()));
+                }
+                
+                userRepository.save(existingUser);
+                return studentRepository.save(existingStudent);
+            } else {
+                // This should not happen normally, but handle it by creating a new student
+                return registerNewStudent(student);
+            }
+        } else {
+            // Create new student
+            return registerNewStudent(student);
+        }
+    }
+
+    /**
+     * Register a new student (internal method)
+     */
+    private Student registerNewStudent(Student student) {
         User user = new User();
         user.setName(student.getName());
         user.setEmail(student.getUser().getEmail());
@@ -96,6 +159,14 @@ public class StudentService {
         student.setUser(user);
         student.setMobileNumber(student.getMobileNumber());  // Ensure mobile number is set
         return studentRepository.save(student);
+    }
+
+    /**
+     * Register a student (public method that handles duplicates)
+     */
+    @Transactional
+    public Student registerStudent(Student student) {
+        return createOrUpdateStudent(student);
     }
 
     @Transactional
@@ -159,25 +230,8 @@ public class StudentService {
         List<Student> registeredStudents = new ArrayList<>();
 
         for (Student student : students) {
-            // Create and set user details (email, password, role)
-            User user = new User();
-            user.setEmail(student.getUser().getEmail());
-            user.setPassword(passwordEncoder.encode(student.getUser().getPassword()));
-            user.setUserRole(UserRole.STUDENT);
-
-            // Save the user (this will save the user to the database)
-            user = userRepository.save(user);
-
-            // Now, set the user and mobileNumber in the student object
-            student.setUser(user);
-
-            // Ensure the mobile number is being set and saved with the student
-            if (student.getMobileNumber() != null && !student.getMobileNumber().isEmpty()) {
-                student.setMobileNumber(student.getMobileNumber()); // This step ensures the mobile number is saved
-            }
-
-            // Save the student with the associated user (including mobile number) to the database
-            registeredStudents.add(studentRepository.save(student));
+            // Use the createOrUpdateStudent method to handle duplicates
+            registeredStudents.add(createOrUpdateStudent(student));
         }
 
         return registeredStudents;

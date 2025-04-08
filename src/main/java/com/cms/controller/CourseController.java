@@ -11,7 +11,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/courses")
@@ -61,14 +63,26 @@ public class CourseController {
         return ResponseEntity.ok(courseService.searchCourses(query));
     }
     
+ // Modify the uploadCourses method to provide better feedback
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/upload")
-    public ResponseEntity<List<Course>> uploadCourses(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> uploadCourses(@RequestParam("file") MultipartFile file) {
         try {
-            List<Course> savedCourses = courseService.uploadCoursesFromExcel(file);
-            return ResponseEntity.ok(savedCourses);
+            List<Course> processedCourses = courseService.uploadCoursesFromExcel(file);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "File processed successfully");
+            response.put("processedCount", processedCourses.size());
+            response.put("courses", processedCourses);
+
+            return ResponseEntity.ok(response);
         } catch (IOException e) {
-            return ResponseEntity.badRequest().build();
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Failed to process file: " + e.getMessage());
+
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
         }
     }
 }
