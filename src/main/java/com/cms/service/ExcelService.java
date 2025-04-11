@@ -51,9 +51,10 @@ public class ExcelService {
                 student.setDno(getCellValueAsString(currentRow.getCell(3)));
                 student.setDepartment(getCellValueAsString(currentRow.getCell(4)));
                 student.setBatchName(getCellValueAsString(currentRow.getCell(5)));
+                student.setSection(getCellValueAsString(currentRow.getCell(6)));
 
                 // Extract mobile number and ensure it is treated as a string
-                String mobileNumber = getCellValueAsString(currentRow.getCell(6)); // Assume column 6 is for mobile number
+                String mobileNumber = getCellValueAsString(currentRow.getCell(7)); // Assume column 6 is for mobile number
                 student.setMobileNumber(mobileNumber); // Ensure it's set as a string
 
                 students.add(student);

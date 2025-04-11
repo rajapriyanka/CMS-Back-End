@@ -43,6 +43,7 @@ public class StudentController {
                 map.put("department", student.getDepartment());
                 map.put("batchName", student.getBatchName());
                 map.put("mobileNumber", student.getMobileNumber());
+                map.put("section", student.getSection());
                 return map;
             })
             .collect(Collectors.toList());
@@ -67,6 +68,7 @@ public class StudentController {
                 map.put("department", student.getDepartment());
                 map.put("batchName", student.getBatchName());
                 map.put("mobileNumber", student.getMobileNumber());
+                map.put("section", student.getSection());
                 return map;
             })
             .collect(Collectors.toList());
@@ -162,6 +164,7 @@ public class StudentController {
                 map.put("department", student.getDepartment());
                 map.put("batchName", student.getBatchName());
                 map.put("mobileNumber", student.getMobileNumber());
+                map.put("section", student.getSection());
                 return map;
             })
             .collect(Collectors.toList());

@@ -135,7 +135,8 @@ public class FacultyCourseService {
                 .orElseThrow(() -> new RuntimeException("Faculty course not found"));
 
         // Step 1: Find all timetable entries for this faculty-course-batch
-        List<TimetableEntry> timetableEntries = timetableEntryRepository.findByBatchIdAndAcademicYearAndSemester(batchId, "2025", "Spring");
+        List<TimetableEntry> timetableEntries = timetableEntryRepository
+                .findByFacultyIdAndCourseIdAndBatchId(facultyId, courseId, batchId);
 
         // Step 2: Delete all substitute requests linked to these timetable entries
         for (TimetableEntry entry : timetableEntries) {
@@ -143,11 +144,12 @@ public class FacultyCourseService {
         }
 
         // Step 3: Delete timetable entries
-        timetableEntryRepository.deleteByFacultyIdAndCourseIdAndBatchId(facultyId, courseId, batchId);
+        timetableEntryRepository.deleteAll(timetableEntries);
 
         // Step 4: Delete the faculty-course mapping
         facultyCourseRepository.delete(facultyCourse);
     }
+
 
     /**
      * Get assigned courses for a faculty.

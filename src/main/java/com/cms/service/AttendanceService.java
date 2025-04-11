@@ -170,14 +170,16 @@ public class AttendanceService {
                 
                 Course course = courseRepository.findById(courseId)
                         .orElseThrow(() -> new RuntimeException("Course not found with ID: " + courseId));
-
-                // Verify faculty is assigned to this course and batch
-                Optional<FacultyCourse> facultyCourse = facultyCourseRepository
-                        .findByFacultyIdAndCourseId(facultyId, courseId);
                 
-                if (facultyCourse.isEmpty()) {
+             // With this:
+                List<FacultyCourse> facultyCourses = facultyCourseRepository
+                        .findAllByFacultyIdAndCourseId(facultyId, courseId);
+
+                if (facultyCourses.isEmpty()) {
                     throw new RuntimeException("Faculty is not assigned to this course");
                 }
+
+              
 
                 // Create attendance record
                 Attendance attendance = new Attendance();

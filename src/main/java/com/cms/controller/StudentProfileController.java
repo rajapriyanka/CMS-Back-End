@@ -113,7 +113,8 @@ public class StudentProfileController {
             student.getDno(),
             student.getBatchName(),
             student.getMobileNumber(),
-            student.getId()
+            student.getId(),
+            student.getSection()
         );
     }
 }

@@ -42,6 +42,8 @@ public interface SubstituteRequestRepository extends JpaRepository<SubstituteReq
     @Transactional
     @Query("DELETE FROM SubstituteRequest sr WHERE sr.timetableEntry.id = :timetableEntryId")
     void deleteByTimetableEntryId(@Param("timetableEntryId") Long timetableEntryId);
+    
+
 
 
 }

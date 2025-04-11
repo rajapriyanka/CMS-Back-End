@@ -122,6 +122,7 @@ public class StudentService {
                 existingStudent.setDepartment(student.getDepartment());
                 existingStudent.setBatchName(student.getBatchName());
                 existingStudent.setMobileNumber(student.getMobileNumber());
+                existingStudent.setSection(student.getSection());
                 
                 // Update user details
                 existingUser.setName(student.getName());
@@ -178,7 +179,8 @@ public class StudentService {
         student.setDno(updatedStudent.getDno());
         student.setDepartment(updatedStudent.getDepartment());
         student.setBatchName(updatedStudent.getBatchName());
-        student.setMobileNumber(updatedStudent.getMobileNumber());  // Ensure mobile number is updated
+        student.setMobileNumber(updatedStudent.getMobileNumber());
+        student.setSection(updatedStudent.getSection());
 
         User user = student.getUser();
         user.setName(updatedStudent.getName());

@@ -26,6 +26,12 @@ public interface LeaveRepository extends JpaRepository<Leave, Long> {
     @Modifying
     @Query("DELETE FROM Leave l WHERE l.faculty = :faculty")
     void deleteByFaculty(@Param("faculty") Faculty faculty);
+    
+
+    // Add this method to find leaves with null approvers
+    List<Leave> findByApproverIsNull();
+    
+
 
 }
 

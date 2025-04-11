@@ -9,12 +9,13 @@ public class StudentDTO {
     private String batchName;
     private String mobileNumber;
     private Long studentId;
+    private String section;
 
     public StudentDTO() {
     }
 
     public StudentDTO(Long userId, String name, String email, String department, String dno, 
-                     String batchName, String mobileNumber, Long studentId) {
+                     String batchName, String mobileNumber, Long studentId, String section) {
         this.userId = userId;
         this.name = name;
         this.email = email;
@@ -23,6 +24,7 @@ public class StudentDTO {
         this.batchName = batchName;
         this.mobileNumber = mobileNumber;
         this.studentId = studentId;
+        this.section = section;
     }
 
     // Getters and setters
@@ -88,5 +90,13 @@ public class StudentDTO {
 
     public void setStudentId(Long studentId) {
         this.studentId = studentId;
+    }
+    
+    public String getSection() {
+        return section;
+    }
+
+    public void setSection(String section) {
+        this.section = section;
     }
 }

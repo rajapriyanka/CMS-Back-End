@@ -19,6 +19,7 @@ public class Student {
     private String dno;
     private String department;
     private String batchName;
+    private String section;
 
     @Column(name = "mobile_number")
     private String mobileNumber;
@@ -78,6 +79,14 @@ public class Student {
 
     public void setName(String name) {
         this.name = name;
+    }
+    
+    public String getSection() {
+        return section;
+    }
+
+    public void setSection(String section) {
+        this.section = section;
     }
     
     // Helper method to get email directly from the student object

@@ -15,6 +15,11 @@ public interface FacultyCourseRepository extends JpaRepository<FacultyCourse, Lo
 
     List<FacultyCourse> findByFacultyId(Long facultyId);
     
+ // In FacultyCourseRepository.java:
+
+ // Add this method:
+ List<FacultyCourse> findAllByFacultyIdAndCourseId(Long facultyId, Long courseId);
+    
     // Update to return the count of deleted entries
     @Modifying
     @Query("DELETE FROM FacultyCourse fc WHERE fc.faculty.id = :facultyId")
