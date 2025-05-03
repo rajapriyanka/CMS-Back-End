@@ -58,7 +58,8 @@ public class AttendanceService {
     /**
      * Generate an Excel template for attendance recording
      */
-    public ByteArrayInputStream generateAttendanceTemplate(Long facultyId, Long courseId, String batchName) throws IOException {
+    public ByteArrayInputStream generateAttendanceTemplate(Long facultyId, Long courseId, String batchName, 
+                                                          String department, String section) throws IOException {
         // Validate faculty, course, and batch
         Faculty faculty = facultyRepository.findById(facultyId)
                 .orElseThrow(() -> new RuntimeException("Faculty not found"));
@@ -66,10 +67,36 @@ public class AttendanceService {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new RuntimeException("Course not found"));
         
-        // Get all students in the batch
-        List<Student> students = studentRepository.findByBatchName(batchName);
-        if (students.isEmpty()) {
-            throw new RuntimeException("No students found in the batch");
+        // Get students based on filters
+        List<Student> students;
+        
+        if (department != null && !department.isEmpty() && section != null && !section.isEmpty()) {
+            // Filter by batch, department, and section
+            students = studentRepository.findByBatchNameAndDepartmentAndSection(batchName, department, section);
+            if (students.isEmpty()) {
+                throw new RuntimeException("No students found in batch " + batchName + 
+                                          " with department " + department + " and section " + section);
+            }
+        } else if (department != null && !department.isEmpty()) {
+            // Filter by batch and department only
+            students = studentRepository.findByBatchNameAndDepartment(batchName, department);
+            if (students.isEmpty()) {
+                throw new RuntimeException("No students found in batch " + batchName + 
+                                          " with department " + department);
+            }
+        } else if (section != null && !section.isEmpty()) {
+            // Filter by batch and section only
+            students = studentRepository.findByBatchNameAndSection(batchName, section);
+            if (students.isEmpty()) {
+                throw new RuntimeException("No students found in batch " + batchName + 
+                                          " with section " + section);
+            }
+        } else {
+            // Get all students in the batch (existing functionality)
+            students = studentRepository.findByBatchName(batchName);
+            if (students.isEmpty()) {
+                throw new RuntimeException("No students found in the batch");
+            }
         }
 
         // Create workbook and sheet
@@ -88,6 +115,8 @@ public class AttendanceService {
         headerRow.createCell(7).setCellValue("Total Periods");
         headerRow.createCell(8).setCellValue("Periods Attended");
         headerRow.createCell(9).setCellValue("Date (YYYY-MM-DD)");
+        headerRow.createCell(10).setCellValue("Department");
+        headerRow.createCell(11).setCellValue("Section");
 
         // Fill student data
         int rowNum = 1;
@@ -106,10 +135,14 @@ public class AttendanceService {
             // Set current date as default
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
             row.createCell(9).setCellValue(dateFormat.format(new Date()));
+            
+            // Add department and section
+            row.createCell(10).setCellValue(student.getDepartment());
+            row.createCell(11).setCellValue(student.getSection() != null ? student.getSection() : "");
         }
 
         // Auto-size columns
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 12; i++) {
             sheet.autoSizeColumn(i);
         }
 
@@ -125,7 +158,8 @@ public class AttendanceService {
      * Process attendance data from uploaded Excel file
      */
     @Transactional
-    public List<AttendanceDTO> processAttendanceFromExcel(Long facultyId, MultipartFile file) throws IOException {
+    public List<AttendanceDTO> processAttendanceFromExcel(Long facultyId, String department, 
+                                                         String section, MultipartFile file) throws IOException {
         Faculty faculty = facultyRepository.findById(facultyId)
                 .orElseThrow(() -> new RuntimeException("Faculty not found"));
 
@@ -157,11 +191,25 @@ public class AttendanceService {
                 Integer totalPeriods = getIntegerCellValue(currentRow.getCell(7));
                 Integer periodsAttended = getIntegerCellValue(currentRow.getCell(8));
                 String date = getStringCellValue(currentRow.getCell(9));
+                String studentDepartment = getStringCellValue(currentRow.getCell(10));
+                String studentSection = getStringCellValue(currentRow.getCell(11));
 
                 // Validate required fields
                 if (studentId == null || courseId == null || batchName == null || 
                     semesterNo == null || totalPeriods == null || periodsAttended == null) {
                     continue; // Skip invalid rows
+                }
+
+                // Apply department filter if provided
+                if (department != null && !department.isEmpty() && 
+                    !department.equalsIgnoreCase(studentDepartment)) {
+                    continue;
+                }
+                
+                // Apply section filter if provided
+                if (section != null && !section.isEmpty() && 
+                    !section.equalsIgnoreCase(studentSection)) {
+                    continue;
                 }
 
                 // Fetch entities
@@ -171,15 +219,13 @@ public class AttendanceService {
                 Course course = courseRepository.findById(courseId)
                         .orElseThrow(() -> new RuntimeException("Course not found with ID: " + courseId));
                 
-             // With this:
+                // With this:
                 List<FacultyCourse> facultyCourses = facultyCourseRepository
                         .findAllByFacultyIdAndCourseId(facultyId, courseId);
 
                 if (facultyCourses.isEmpty()) {
                     throw new RuntimeException("Faculty is not assigned to this course");
                 }
-
-              
 
                 // Create attendance record
                 Attendance attendance = new Attendance();
@@ -212,17 +258,144 @@ public class AttendanceService {
     }
 
     /**
-     * Get attendance records for a faculty's course and batch
+     * Get attendance records for a faculty's course and batch with optional filters
      */
-    public List<AttendanceDTO> getAttendanceByFacultyCourseAndBatch(Long facultyId, Long courseId, String batchName) {
+ // Only updating the getAttendanceByFacultyCourseAndBatch method, the rest of the file remains the same
+
+    /**
+     * Get attendance records for a faculty's course and batch with optional filters
+     */
+    public List<AttendanceDTO> getAttendanceByFacultyCourseAndBatch(Long facultyId, Long courseId, 
+                                                                   String batchName, String department, String section) {
         List<Attendance> attendanceList = attendanceRepository
                 .findByFacultyIdAndCourseIdAndBatchName(facultyId, courseId, batchName);
+        
+        // Apply filters if provided
+        if (department != null && !department.isEmpty() || section != null && !section.isEmpty()) {
+            attendanceList = attendanceList.stream()
+                .filter(a -> {
+                    boolean match = true;
+                    
+                    // Filter by department if provided
+                    if (department != null && !department.isEmpty()) {
+                        match = match && department.equalsIgnoreCase(a.getStudent().getDepartment());
+                    }
+                    
+                    // Filter by section if provided
+                    if (section != null && !section.isEmpty()) {
+                        match = match && section.equalsIgnoreCase(a.getStudent().getSection());
+                    }
+                    
+                    return match;
+                })
+                .collect(Collectors.toList());
+        }
         
         return attendanceList.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Generate attendance report Excel for a course and batch with optional filters
+     */
+    public ByteArrayInputStream generateAttendanceReport(Long facultyId, Long courseId, 
+                                                       String batchName, String department, String section) throws IOException {
+        List<Attendance> attendanceList = attendanceRepository
+                .findByFacultyIdAndCourseIdAndBatchName(facultyId, courseId, batchName);
+        
+        if (attendanceList.isEmpty()) {
+            throw new RuntimeException("No attendance records found");
+        }
+
+        // Apply filters if provided
+        if (department != null && !department.isEmpty() || section != null && !section.isEmpty()) {
+            attendanceList = attendanceList.stream()
+                .filter(a -> {
+                    boolean match = true;
+                    
+                    // Filter by department if provided
+                    if (department != null && !department.isEmpty()) {
+                        match = match && department.equalsIgnoreCase(a.getStudent().getDepartment());
+                    }
+                    
+                    // Filter by section if provided
+                    if (section != null && !section.isEmpty()) {
+                        match = match && section.equalsIgnoreCase(a.getStudent().getSection());
+                    }
+                    
+                    return match;
+                })
+                .collect(Collectors.toList());
+            
+            if (attendanceList.isEmpty()) {
+                String filterDesc = "";
+                if (department != null && !department.isEmpty()) {
+                    filterDesc += "department: " + department;
+                }
+                if (section != null && !section.isEmpty()) {
+                    filterDesc += (filterDesc.isEmpty() ? "" : " and ") + "section: " + section;
+                }
+                throw new RuntimeException("No attendance records found for " + filterDesc);
+            }
+        }
+
+        // Create workbook and sheet
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("Attendance Report");
+
+        // Create styles
+        CellStyle headerStyle = workbook.createCellStyle();
+        Font headerFont = workbook.createFont();
+        headerFont.setBold(true);
+        headerStyle.setFont(headerFont);
+
+        // Create header row
+        Row headerRow = sheet.createRow(0);
+        String[] columns = {"Student ID", "Student Name", "Roll No", "Department", "Section", "Course Code", "Batch", 
+                           "Semester", "Total Periods", "Periods Attended", "Attendance %", "Date"};
+        
+        for (int i = 0; i < columns.length; i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(columns[i]);
+            cell.setCellStyle(headerStyle);
+        }
+
+        // Fill data rows
+        int rowNum = 1;
+        for (Attendance attendance : attendanceList) {
+            Row row = sheet.createRow(rowNum++);
+            
+            row.createCell(0).setCellValue(attendance.getStudent().getId());
+            row.createCell(1).setCellValue(attendance.getStudent().getName());
+            row.createCell(2).setCellValue(attendance.getStudent().getDno());
+            row.createCell(3).setCellValue(attendance.getStudent().getDepartment());
+            row.createCell(4).setCellValue(attendance.getStudent().getSection() != null ? 
+                                          attendance.getStudent().getSection() : "");
+            row.createCell(5).setCellValue(attendance.getCourse().getCode());
+            row.createCell(6).setCellValue(attendance.getBatchName());
+            row.createCell(7).setCellValue(attendance.getSemesterNo());
+            row.createCell(8).setCellValue(attendance.getTotalPeriods());
+            row.createCell(9).setCellValue(attendance.getPeriodsAttended());
+            row.createCell(10).setCellValue(String.format("%.2f%%", attendance.getAttendancePercentage()));
+            row.createCell(11).setCellValue(attendance.getDate());
+        }
+
+        // Auto-size columns
+        for (int i = 0; i < columns.length; i++) {
+            sheet.autoSizeColumn(i);
+        }
+
+        // Write to output stream
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        workbook.write(outputStream);
+        workbook.close();
+
+        return new ByteArrayInputStream(outputStream.toByteArray());
+    }
+
+    // The rest of the methods remain unchanged
+    
     /**
      * Get attendance records for a student in a specific course
      */
@@ -278,68 +451,6 @@ public class AttendanceService {
         }
         
         return result;
-    }
-
-    /**
-     * Generate attendance report Excel for a course and batch
-     */
-    public ByteArrayInputStream generateAttendanceReport(Long facultyId, Long courseId, String batchName) throws IOException {
-        List<Attendance> attendanceList = attendanceRepository
-                .findByFacultyIdAndCourseIdAndBatchName(facultyId, courseId, batchName);
-        
-        if (attendanceList.isEmpty()) {
-            throw new RuntimeException("No attendance records found");
-        }
-
-        // Create workbook and sheet
-        Workbook workbook = new XSSFWorkbook();
-        Sheet sheet = workbook.createSheet("Attendance Report");
-
-        // Create styles
-        CellStyle headerStyle = workbook.createCellStyle();
-        Font headerFont = workbook.createFont();
-        headerFont.setBold(true);
-        headerStyle.setFont(headerFont);
-
-        // Create header row
-        Row headerRow = sheet.createRow(0);
-        String[] columns = {"Student ID", "Student Name", "Roll No", "Course Code", "Batch", 
-                           "Semester", "Total Periods", "Periods Attended", "Attendance %", "Date"};
-        
-        for (int i = 0; i < columns.length; i++) {
-            Cell cell = headerRow.createCell(i);
-            cell.setCellValue(columns[i]);
-            cell.setCellStyle(headerStyle);
-        }
-
-        // Fill data rows
-        int rowNum = 1;
-        for (Attendance attendance : attendanceList) {
-            Row row = sheet.createRow(rowNum++);
-            
-            row.createCell(0).setCellValue(attendance.getStudent().getId());
-            row.createCell(1).setCellValue(attendance.getStudent().getName());
-            row.createCell(2).setCellValue(attendance.getStudent().getDno());
-            row.createCell(3).setCellValue(attendance.getCourse().getCode());
-            row.createCell(4).setCellValue(attendance.getBatchName());
-            row.createCell(5).setCellValue(attendance.getSemesterNo());
-            row.createCell(6).setCellValue(attendance.getTotalPeriods());
-            row.createCell(7).setCellValue(attendance.getPeriodsAttended());
-            row.createCell(8).setCellValue(String.format("%.2f%%", attendance.getAttendancePercentage()));
-            row.createCell(9).setCellValue(attendance.getDate());
-        }
-
-        // Auto-size columns
-        for (int i = 0; i < columns.length; i++) {
-            sheet.autoSizeColumn(i);
-        }
-
-        // Write to output stream
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        workbook.write(outputStream);
-        workbook.close();
-
-        return new ByteArrayInputStream(outputStream.toByteArray());
     }
     
     /**
@@ -505,6 +616,8 @@ public class AttendanceService {
         dto.setStudentId(attendance.getStudent().getId());
         dto.setStudentName(attendance.getStudent().getName());
         dto.setStudentDno(attendance.getStudent().getDno());
+        dto.setDepartment(attendance.getStudent().getDepartment());
+        dto.setSection(attendance.getStudent().getSection());
         dto.setCourseId(attendance.getCourse().getId());
         dto.setCourseCode(attendance.getCourse().getCode());
         dto.setCourseTitle(attendance.getCourse().getTitle());

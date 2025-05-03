@@ -297,7 +297,7 @@ public class AdminPasswordService {
             String htmlBody = "<p>Dear " + user.getName() + ",</p>"
                     + "<p>You have requested to reset your password for the College Management System.</p>"
                     + "<p>Your One-Time Password (OTP) for password reset is: <strong>" + otp + "</strong></p>"
-                    + "<p>This OTP will expire in 10 minutes.</p>"
+                    + "<p>This OTP will expire in 3 minutes.</p>"
                     + "<p>If you did not request this password reset, please ignore this email or contact the system administrator.</p>"
                     + "<p>Thank you.</p>"
                     + "<p>With Regards,</p>"

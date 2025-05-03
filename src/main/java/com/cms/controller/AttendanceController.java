@@ -32,9 +32,12 @@ public class AttendanceController {
     public ResponseEntity<InputStreamResource> generateAttendanceTemplate(
             @RequestParam Long facultyId,
             @RequestParam Long courseId,
-            @RequestParam String batchName) throws IOException {
+            @RequestParam String batchName,
+            @RequestParam(required = false) String department,
+            @RequestParam(required = false) String section) throws IOException {
         
-        ByteArrayInputStream template = attendanceService.generateAttendanceTemplate(facultyId, courseId, batchName);
+        ByteArrayInputStream template = attendanceService.generateAttendanceTemplate(
+            facultyId, courseId, batchName, department, section);
         
         HttpHeaders headers = new HttpHeaders();
         headers.add("Content-Disposition", "attachment; filename=attendance_template.xlsx");
@@ -53,11 +56,19 @@ public class AttendanceController {
     @PreAuthorize("hasRole('FACULTY')")
     public ResponseEntity<List<AttendanceDTO>> uploadAttendance(
             @RequestParam Long facultyId,
+            @RequestParam(required = false) String department,
+            @RequestParam(required = false) String section,
             @RequestParam("file") MultipartFile file) throws IOException {
         
-        List<AttendanceDTO> processedAttendance = attendanceService.processAttendanceFromExcel(facultyId, file);
+        List<AttendanceDTO> processedAttendance = attendanceService.processAttendanceFromExcel(
+            facultyId, department, section, file);
         return ResponseEntity.ok(processedAttendance);
     }
+
+    /**
+     * Get attendance records for a faculty's course and batch
+     */
+ // Only updating the getAttendanceByFacultyCourseAndBatch method, the rest of the file remains the same
 
     /**
      * Get attendance records for a faculty's course and batch
@@ -67,13 +78,14 @@ public class AttendanceController {
     public ResponseEntity<List<AttendanceDTO>> getAttendanceByFacultyCourseAndBatch(
             @PathVariable Long facultyId,
             @PathVariable Long courseId,
-            @PathVariable String batchName) {
+            @PathVariable String batchName,
+            @RequestParam(required = false) String department,
+            @RequestParam(required = false) String section) {
         
         List<AttendanceDTO> attendance = attendanceService.getAttendanceByFacultyCourseAndBatch(
-                facultyId, courseId, batchName);
+                facultyId, courseId, batchName, department, section);
         return ResponseEntity.ok(attendance);
     }
-
     /**
      * Get attendance records for a student in a specific course
      */
@@ -109,9 +121,12 @@ public class AttendanceController {
     public ResponseEntity<InputStreamResource> generateAttendanceReport(
             @RequestParam Long facultyId,
             @RequestParam Long courseId,
-            @RequestParam String batchName) throws IOException {
+            @RequestParam String batchName,
+            @RequestParam(required = false) String department,
+            @RequestParam(required = false) String section) throws IOException {
         
-        ByteArrayInputStream report = attendanceService.generateAttendanceReport(facultyId, courseId, batchName);
+        ByteArrayInputStream report = attendanceService.generateAttendanceReport(
+            facultyId, courseId, batchName, department, section);
         
         HttpHeaders headers = new HttpHeaders();
         headers.add("Content-Disposition", "attachment; filename=attendance_report.xlsx");

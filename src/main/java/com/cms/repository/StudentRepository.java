@@ -25,6 +25,15 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
     Optional<Student> findByUser(User user);
     List<Student> findByBatchName(String batchName);
     
+    List<Student> findByBatchNameAndDepartment(String batchName, String department);
+    
+    List<Student> findByBatchNameAndSection(String batchName, String section);
+    
+    // Find students by batch name, department, and section
+    List<Student> findByBatchNameAndDepartmentAndSection(String batchName, String department, String section);
+    
+    
+    
     @Modifying
     @Query("DELETE FROM Student s WHERE s.batchName = :batchName")
     void deleteByBatchName(@Param("batchName") String batchName);

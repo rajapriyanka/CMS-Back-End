@@ -6,6 +6,8 @@ public class AttendanceDTO {
     private Long studentId;
     private String studentName;
     private String studentDno;
+    private String department;
+    private String section;
     private Long courseId;
     private String courseCode;
     private String courseTitle;
@@ -49,6 +51,22 @@ public class AttendanceDTO {
 
     public void setStudentDno(String studentDno) {
         this.studentDno = studentDno;
+    }
+    
+    public String getDepartment() {
+        return department;
+    }
+
+    public void setDepartment(String department) {
+        this.department = department;
+    }
+
+    public String getSection() {
+        return section;
+    }
+
+    public void setSection(String section) {
+        this.section = section;
     }
 
     public Long getCourseId() {
