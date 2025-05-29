@@ -65,7 +65,7 @@ public class EmailService {
             String htmlBody = "<p>Dear " + approverName + ",</p>"
                     + "<p>A leave request has been submitted by " + senderName + " with the following details:</p>"
                     + "<p><strong>Subject:</strong> " + subject + "</p>"
-                    + "<p><strong>Reason:</strong> " + body + "</p>"
+                    + "<p><strong>Reason :</strong> " + body + "</p>"
                     + "<p><strong>Leave Period:</strong> " + fromDate + " to " + toDate + "</p>"
                     + "<p><a href='" + approveUrl + "' style='padding: 10px; background: green; color: white; text-decoration: none;'>Approve</a>"
                     + " &nbsp; "
