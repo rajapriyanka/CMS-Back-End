@@ -104,7 +104,7 @@ public class EmailService {
             String htmlBody = "<p>Dear " + senderName + ",</p>"
                     + "<p>Your leave request for the period <strong>" + fromDate + " to " + toDate + "</strong> has been updated by " + approverName + ":</p>"
                     + "<p><strong>Status:</strong> " + body + "</p>"
-                    + "<p>If you have any questions, please contact " + approverName + ".</p>"
+                    + "<p>If you have any enquires, please contact " + approverName + ".</p>"
                     + "<p>Thank you.</p>"
                     +"<p>With Regards,</p>"
                     +"<p>CMS.</p>";
